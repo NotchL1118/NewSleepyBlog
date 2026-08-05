@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Sleepy Blog — Visual Prototype</title>
+    <!-- PROTOTYPE: Three blog directions, switchable via ?variant=a|b|c. -->
+    <style>
+      :root {
+        --paper: #fefefb;
+        --surface: #f7f6f2;
+        --ink: #1a1a1a;
+        --muted: #6b6b6b;
+        --line: #e5e4df;
+        --accent: #33a6b8;
+        --accent-rgb: 51, 166, 184;
+        --shadow: rgba(32, 31, 27, 0.08);
+        --paper-grain-opacity: 0.052;
+        --max-width: 1180px;
+        --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      html[data-theme="dark"] {
+        --paper: #1c1c1e;
+        --surface: #2c2c2e;
+        --ink: #ededed;
+        --muted: #a1a1a6;
+        --line: #3a3a3c;
+        --accent: #f596aa;
+        --accent-rgb: 245, 150, 170;
+        --shadow: rgba(0, 0, 0, 0.28);
+        --paper-grain-opacity: 0.036;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.75;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        transition: color 220ms ease, background-color 220ms ease;
+      }
+
+      /* Embedded fractal noise keeps the prototype genuinely single-file. */
+      body::before {
+        position: fixed;
+        z-index: 20;
+        inset: 0;
+        pointer-events: none;
+        content: "";
+        opacity: var(--paper-grain-opacity);
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' seed='12' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+        background-size: 220px 220px;
+        mix-blend-mode: multiply;
+      }
+
+      body::after {
+        position: fixed;
+        z-index: 19;
+        inset: 0;
+        pointer-events: none;
+        content: "";
+        opacity: 0.42;
+        background-image:
+          radial-gradient(circle at 18% 24%, rgba(30, 30, 26, 0.055) 0 0.55px, transparent 0.7px),
+          radial-gradient(circle at 76% 68%, rgba(30, 30, 26, 0.04) 0 0.45px, transparent 0.65px);
+        background-size: 9px 11px, 13px 15px;
+      }
+
+      html[data-theme="dark"] body::before {
+        mix-blend-mode: soft-light;
+      }
+
+      html[data-theme="dark"] body::after {
+        opacity: 0.16;
+        filter: invert(1);
+      }
+
+      button,
+      a {
+        color: inherit;
+      }
+
+      a {
+        text-decoration-color: rgba(var(--accent-rgb), 0.45);
+        text-underline-offset: 0.28em;
+        transition: color 160ms ease, text-decoration-color 160ms ease;
+      }
+
+      a:hover {
+        color: var(--accent);
+        text-decoration-color: var(--accent);
+      }
+
+      button:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 4px;
+      }
+
+      .site-bar {
+        position: relative;
+        z-index: 4;
+        display: flex;
+        width: min(calc(100% - 48px), var(--max-width));
+        min-height: 92px;
+        margin: 0 auto;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.1);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .nav a {
+        text-decoration: none;
+      }
+
+      .theme-toggle {
+        display: inline-grid;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        place-items: center;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--paper) 86%, transparent);
+        cursor: pointer;
+      }
+
+      .theme-toggle:hover {
+        color: var(--accent);
+        border-color: rgba(var(--accent-rgb), 0.45);
+      }
+
+      .theme-toggle svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .prototype-note {
+        position: fixed;
+        z-index: 30;
+        top: 18px;
+        left: 50%;
+        padding: 5px 9px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 99px;
+        background: color-mix(in srgb, var(--paper) 88%, transparent);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        transform: translateX(-50%);
+        backdrop-filter: blur(10px);
+      }
+
+      .variant {
+        display: none;
+        min-height: calc(100vh - 92px);
+        padding-bottom: 150px;
+      }
+
+      .variant.is-active {
+        display: block;
+        animation: reveal 420ms ease both;
+      }
+
+      .journal.is-active {
+        display: grid;
+      }
+
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .eyebrow {
+        margin: 0 0 22px;
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        color: var(--muted);
+        font-size: clamp(16px, 1.8vw, 20px);
+        line-height: 1.85;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+      }
+
+      /* Variant A — an airy editorial index. */
+      .editorial {
+        width: min(calc(100% - 48px), 1040px);
+        margin: 0 auto;
+      }
+
+      .editorial-hero {
+        display: grid;
+        min-height: 510px;
+        padding: 92px 0 78px;
+        grid-template-columns: minmax(0, 1.65fr) minmax(220px, 0.7fr);
+        gap: 9vw;
+        align-items: end;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .editorial h1 {
+        max-width: 720px;
+        margin: 0;
+        font-size: clamp(44px, 7.2vw, 84px);
+        font-weight: 520;
+        letter-spacing: -0.055em;
+        line-height: 1.07;
+      }
+
+      .editorial-hero .lede {
+        max-width: 330px;
+        margin: 0;
+      }
+
+      .editorial-list {
+        padding-top: 16px;
+      }
+
+      .editorial-item {
+        display: grid;
+        padding: 38px 0 42px;
+        grid-template-columns: 120px minmax(0, 1fr) 24px;
+        gap: 34px;
+        align-items: start;
+        border-bottom: 1px solid var(--line);
+        text-decoration: none;
+      }
+
+      .editorial-item:hover h2,
+      .editorial-item:hover .item-arrow {
+        color: var(--accent);
+      }
+
+      .editorial-item h2 {
+        margin: -5px 0 9px;
+        font-size: clamp(24px, 3.2vw, 36px);
+        font-weight: 520;
+        letter-spacing: -0.03em;
+        line-height: 1.3;
+        transition: color 160ms ease;
+      }
+
+      .editorial-item p {
+        max-width: 650px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .item-arrow {
+        padding-top: 5px;
+        color: var(--muted);
+        font-size: 17px;
+        transition: color 160ms ease, transform 160ms ease;
+      }
+
+      .editorial-item:hover .item-arrow {
+        transform: translateX(3px);
+      }
+
+      /* Variant B — a quiet journal with a persistent author column. */
+      .journal {
+        width: min(calc(100% - 48px), var(--max-width));
+        margin: 0 auto;
+        grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1.55fr);
+        gap: 8vw;
+      }
+
+      .journal-aside {
+        position: sticky;
+        top: 0;
+        display: flex;
+        height: calc(100vh - 92px);
+        padding: 74px 0 110px;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .journal-aside h1 {
+        max-width: 300px;
+        margin: 0 0 24px;
+        font-size: clamp(34px, 4.5vw, 56px);
+        font-weight: 530;
+        letter-spacing: -0.045em;
+        line-height: 1.16;
+      }
+
+      .journal-aside .lede {
+        max-width: 330px;
+        font-size: 15px;
+      }
+
+      .aside-foot {
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+
+      .journal-stream {
+        padding: 72px 0 100px;
+      }
+
+      .year-rule {
+        display: flex;
+        margin-bottom: 4px;
+        align-items: center;
+        gap: 18px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+      }
+
+      .year-rule::after {
+        height: 1px;
+        flex: 1;
+        background: var(--line);
+        content: "";
+      }
+
+      .journal-entry {
+        display: grid;
+        padding: 40px 0 44px;
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 28px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .entry-day {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .entry-day strong {
+        display: block;
+        color: var(--ink);
+        font-size: 22px;
+        font-weight: 520;
+      }
+
+      .journal-entry h2 {
+        margin: -6px 0 12px;
+        font-size: clamp(25px, 3.2vw, 38px);
+        font-weight: 520;
+        letter-spacing: -0.035em;
+        line-height: 1.3;
+      }
+
+      .journal-entry p {
+        max-width: 610px;
+        margin: 0 0 22px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .text-link {
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 650;
+        letter-spacing: 0.04em;
+        text-decoration: none;
+      }
+
+      /* Variant C — a reading-room layout with marginalia. */
+      .reading-room {
+        width: min(calc(100% - 48px), 1120px);
+        margin: 0 auto;
+        padding-top: 74px;
+      }
+
+      .reading-title {
+        display: grid;
+        padding-bottom: 64px;
+        grid-template-columns: 180px minmax(0, 680px);
+        gap: 62px;
+        justify-content: center;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .reading-index {
+        padding-top: 12px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.9;
+        letter-spacing: 0.08em;
+      }
+
+      .reading-index strong {
+        display: block;
+        margin-bottom: 13px;
+        color: var(--ink);
+        font-size: 12px;
+        letter-spacing: 0.02em;
+      }
+
+      .reading-title h1 {
+        margin: 0 0 26px;
+        font-size: clamp(40px, 6.5vw, 72px);
+        font-weight: 510;
+        letter-spacing: -0.055em;
+        line-height: 1.13;
+      }
+
+      .reading-body {
+        display: grid;
+        padding-top: 72px;
+        grid-template-columns: 180px minmax(0, 680px);
+        gap: 62px;
+        justify-content: center;
+      }
+
+      .marginalia {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.7;
+      }
+
+      .marginalia span {
+        display: block;
+        width: 28px;
+        height: 2px;
+        margin-bottom: 15px;
+        background: var(--accent);
+      }
+
+      .prose {
+        font-size: clamp(17px, 1.7vw, 19px);
+        line-height: 2.05;
+      }
+
+      .prose p {
+        margin: 0 0 1.75em;
+      }
+
+      .prose p:first-child::first-letter {
+        float: left;
+        margin: 0.11em 0.12em 0 0;
+        color: var(--accent);
+        font-size: 4.2em;
+        font-weight: 500;
+        line-height: 0.72;
+      }
+
+      .prose blockquote {
+        margin: 2.8em 0;
+        padding: 2px 0 2px 25px;
+        color: var(--muted);
+        border-left: 2px solid var(--accent);
+        font-size: 1.12em;
+        line-height: 1.85;
+      }
+
+      .article-end {
+        display: flex;
+        margin-top: 52px;
+        padding-top: 30px;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+      }
+
+      .prototype-switcher {
+        position: fixed;
+        z-index: 50;
+        bottom: 24px;
+        left: 50%;
+        display: grid;
+        min-width: 330px;
+        padding: 7px;
+        grid-template-columns: 42px minmax(190px, 1fr) 42px;
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        background: rgba(22, 22, 24, 0.92);
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+        transform: translateX(-50%);
+        backdrop-filter: blur(14px);
+      }
+
+      .prototype-switcher button {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        place-items: center;
+        color: #ededed;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        font-size: 17px;
+        cursor: pointer;
+      }
+
+      .prototype-switcher button:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .switch-label {
+        color: #ededed;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-align: center;
+      }
+
+      .switch-label small {
+        display: block;
+        margin-top: 1px;
+        color: #98989d;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 900px) {
+        .prototype-note {
+          display: none;
+        }
+
+        .editorial-hero {
+          min-height: auto;
+          padding: 74px 0 62px;
+          grid-template-columns: 1fr;
+          gap: 42px;
+        }
+
+        .journal {
+          display: block;
+        }
+
+        .journal-aside {
+          position: static;
+          height: auto;
+          padding: 72px 0 42px;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .aside-foot {
+          display: none;
+        }
+
+        .reading-title,
+        .reading-body {
+          grid-template-columns: minmax(0, 680px);
+          gap: 30px;
+        }
+
+        .reading-index,
+        .marginalia {
+          max-width: 460px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .site-bar,
+        .editorial,
+        .journal,
+        .reading-room {
+          width: min(calc(100% - 34px), var(--max-width));
+        }
+
+        .site-bar {
+          min-height: 76px;
+        }
+
+        .nav a {
+          display: none;
+        }
+
+        .editorial-item {
+          padding: 29px 0 33px;
+          grid-template-columns: 1fr 18px;
+          gap: 15px;
+        }
+
+        .editorial-item .meta {
+          grid-column: 1 / -1;
+        }
+
+        .journal-entry {
+          grid-template-columns: 54px minmax(0, 1fr);
+          gap: 18px;
+        }
+
+        .reading-room {
+          padding-top: 58px;
+        }
+
+        .reading-title {
+          padding-bottom: 50px;
+        }
+
+        .reading-body {
+          padding-top: 50px;
+        }
+
+        .marginalia {
+          display: none;
+        }
+
+        .prototype-switcher {
+          bottom: 14px;
+          min-width: min(330px, calc(100% - 28px));
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <span class="prototype-note">Visual prototype</span>
+
+    <header class="site-bar">
+      <a class="brand" href="#" aria-label="Sleepy Blog 首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        SLEEPY NOTES
+      </a>
+      <nav class="nav" aria-label="主导航">
+        <a href="#writing">文章</a>
+        <a href="#about">关于</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换深浅色模式">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15Z" />
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="variant editorial" data-variant="a" aria-label="方案 A：编辑部首页">
+        <div class="editorial-hero">
+          <div>
+            <p class="eyebrow">Letters on craft &amp; life</p>
+            <h1>在喧闹之外，认真记录缓慢发生的事。</h1>
+          </div>
+          <p class="lede">
+            关于设计、代码与日常生活的私人札记。写给仍愿意停下来阅读的人，也写给未来的自己。
+          </p>
+        </div>
+
+        <div class="editorial-list" id="writing">
+          <a class="editorial-item" href="#article">
+            <span class="meta">2026.08.02</span>
+            <div>
+              <h2>留白不是空缺，而是一种编辑</h2>
+              <p>当页面不再急着填满每一寸空间，真正重要的内容才开始拥有自己的声音。</p>
+            </div>
+            <span class="item-arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="editorial-item" href="#article">
+            <span class="meta">2026.07.18</span>
+            <div>
+              <h2>把个人网站重新当作一间房间</h2>
+              <p>它不必迎合所有访客，只需要诚实地容纳主人的兴趣、节奏与变化。</p>
+            </div>
+            <span class="item-arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="editorial-item" href="#article">
+            <span class="meta">2026.06.29</span>
+            <div>
+              <h2>夜晚写作时，我在听什么</h2>
+              <p>一些低声的音乐、窗外偶尔驶过的车，以及键盘上并不均匀的停顿。</p>
+            </div>
+            <span class="item-arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="variant journal" data-variant="b" aria-label="方案 B：侧栏日志">
+        <aside class="journal-aside" id="about">
+          <div>
+            <p class="eyebrow">A quiet journal</p>
+            <h1>你好，我是 Young。</h1>
+            <p class="lede">
+              一名设计与开发之间的长期游荡者。这里收录我对产品、技术和普通生活的观察。
+            </p>
+          </div>
+          <p class="aside-foot">Shanghai · 31°C · Last updated today</p>
+        </aside>
+
+        <div class="journal-stream">
+          <div class="year-rule">2026</div>
+          <article class="journal-entry">
+            <time class="entry-day" datetime="2026-08-02"><strong>02</strong>AUG</time>
+            <div>
+              <h2>留白不是空缺，而是一种编辑</h2>
+              <p>我们经常把“没有放东西”误解成浪费，但空白其实在持续地组织视线、停顿和优先级。</p>
+              <a class="text-link" href="#article">继续阅读&nbsp; →</a>
+            </div>
+          </article>
+          <article class="journal-entry">
+            <time class="entry-day" datetime="2026-07-18"><strong>18</strong>JUL</time>
+            <div>
+              <h2>把个人网站重新当作一间房间</h2>
+              <p>社交平台像广场，而个人网站更像一间自己打理的房间。它可以安静，可以偏执，也可以慢慢变化。</p>
+              <a class="text-link" href="#article">继续阅读&nbsp; →</a>
+            </div>
+          </article>
+          <article class="journal-entry">
+            <time class="entry-day" datetime="2026-06-29"><strong>29</strong>JUN</time>
+            <div>
+              <h2>夜晚写作时，我在听什么</h2>
+              <p>不是一张效率歌单，只是一些能让时间变得不那么锋利的声音。</p>
+              <a class="text-link" href="#article">继续阅读&nbsp; →</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="variant reading-room" data-variant="c" id="article" aria-label="方案 C：沉浸阅读">
+        <header class="reading-title">
+          <div class="reading-index">
+            <strong>ESSAY · 014</strong>
+            2026 年 8 月 2 日<br />约 6 分钟阅读
+          </div>
+          <div>
+            <p class="eyebrow">Design notes</p>
+            <h1>留白不是空缺，而是一种编辑</h1>
+            <p class="lede">当页面不再急着填满每一寸空间，真正重要的内容才开始拥有自己的声音。</p>
+          </div>
+        </header>
+
+        <div class="reading-body">
+          <aside class="marginalia">
+            <span aria-hidden="true"></span>
+            余白，日语写作「よはく」。它并不是被遗忘的部分，而是有意留下的空间。
+          </aside>
+          <article class="prose">
+            <p>
+              我们常常用一种近乎本能的方式填满屏幕。多一张卡片，多一枚标签，多一条能证明页面“有内容”的分割线。仿佛空间只有被占据，才算完成了它的使命。
+            </p>
+            <p>
+              但阅读需要的并不只是内容。它还需要停顿，需要视线可以暂时落下的地方，也需要让上一句话慢慢沉淀的时间。好的留白不是空缺，而是一种编辑：它决定什么先被看见，什么值得靠近，以及什么时候应该停下来。
+            </p>
+            <blockquote>
+              页面像一封徐徐展开的信纸。文字提供意义，而留白替它安排呼吸。
+            </blockquote>
+            <p>
+              这种克制同样适用于颜色。强调色之所以能成为强调，是因为它很少出现。一个链接、一条引用线、一个清楚的焦点状态已经足够。其余部分交给纸张般的底色、安静的文字和时间。
+            </p>
+            <p>
+              最终，我们并不是在设计一张供人快速扫过的海报，而是在整理一个可以停留的地方。它不需要抓住每个人，只要让愿意读下去的人感到舒服。
+            </p>
+            <footer class="article-end">
+              <span>写于上海，一个缓慢的夏夜</span>
+              <a href="#">返回顶部 ↑</a>
+            </footer>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <div class="prototype-switcher" role="group" aria-label="原型方案切换">
+      <button id="prevVariant" type="button" aria-label="上一个方案">←</button>
+      <div class="switch-label" aria-live="polite">
+        <span id="variantLabel">A — Editorial index</span>
+        <small>Use ← → to compare</small>
+      </div>
+      <button id="nextVariant" type="button" aria-label="下一个方案">→</button>
+    </div>
+
+    <script>
+      const variants = [
+        { key: "a", label: "A — 编辑部首页" },
+        { key: "b", label: "B — 侧栏日志" },
+        { key: "c", label: "C — 沉浸阅读" },
+      ];
+
+      const root = document.documentElement;
+      const label = document.querySelector("#variantLabel");
+      const themeToggle = document.querySelector("#themeToggle");
+
+      function currentVariant() {
+        const value = new URLSearchParams(window.location.search).get("variant");
+        return variants.some((variant) => variant.key === value) ? value : "a";
+      }
+
+      function renderVariant(key, updateHistory = false) {
+        document.querySelectorAll("[data-variant]").forEach((section) => {
+          const active = section.dataset.variant === key;
+          section.classList.toggle("is-active", active);
+          section.toggleAttribute("inert", !active);
+        });
+
+        const selected = variants.find((variant) => variant.key === key) ?? variants[0];
+        label.textContent = selected.label;
+        document.title = `Sleepy Blog — ${selected.label}`;
+
+        if (updateHistory) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("variant", key);
+          window.history.replaceState({}, "", url);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }
+
+      function cycleVariant(direction) {
+        const index = variants.findIndex((variant) => variant.key === currentVariant());
+        const next = (index + direction + variants.length) % variants.length;
+        renderVariant(variants[next].key, true);
+      }
+
+      function setTheme(theme) {
+        root.dataset.theme = theme;
+        window.localStorage.setItem("sleepy-blog-theme", theme);
+        themeToggle.setAttribute("aria-label", theme === "dark" ? "切换浅色模式" : "切换深色模式");
+      }
+
+      document.querySelector("#prevVariant").addEventListener("click", () => cycleVariant(-1));
+      document.querySelector("#nextVariant").addEventListener("click", () => cycleVariant(1));
+      themeToggle.addEventListener("click", () => setTheme(root.dataset.theme === "dark" ? "light" : "dark"));
+
+      window.addEventListener("keydown", (event) => {
+        const target = event.target;
+        if (target.matches("input, textarea, [contenteditable='true']")) return;
+        if (event.key === "ArrowLeft") cycleVariant(-1);
+        if (event.key === "ArrowRight") cycleVariant(1);
+      });
+
+      window.addEventListener("popstate", () => renderVariant(currentVariant()));
+
+      const storedTheme = window.localStorage.getItem("sleepy-blog-theme");
+      const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      setTheme(storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme);
+      renderVariant(currentVariant());
+    </script>
+  </body>
+</html>
