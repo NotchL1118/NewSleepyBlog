@@ -1,3 +1,7 @@
+## Package manager
+
+This project uses **pnpm** for package management.
+
 ## Agent skills
 
 ### Issue tracker
@@ -14,9 +18,16 @@ Single-context layout: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.
 
 ### Visual style
 
-Before creating or changing pages, UI components, themes, or styles, read and follow `docs/agents/visual-style.md`.
+Before creating or changing pages, UI components, themes, or styles, read and follow both:
 
-The guide governs visual presentation only. Do not use it to infer or alter content structure, page modules, feature priority, or product behavior unless the task explicitly requests those changes.
+- `docs/agents/visual-style.md` for visual direction;
+- `docs/agents/styling.md` for styling implementation conventions.
+
+The visual style guide governs visual presentation only. Do not use it to infer or alter content structure, page modules, feature priority, or product behavior unless the task explicitly requests those changes.
+
+### Responsive design
+
+Build responsive behavior from the start; do not finish a desktop-only layout and defer mobile adaptation. Use a mobile-first approach: base styles target narrow screens, and Tailwind breakpoint variants progressively enhance wider layouts. Every page or component change must be checked at both mobile and desktop widths for readable content, usable controls, appropriate spacing, and no unintended horizontal overflow.
 
 ### Demo directory
 

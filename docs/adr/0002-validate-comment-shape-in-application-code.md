@@ -1,0 +1,3 @@
+# Validate comment shape in application code
+
+Comment thread shape—keeping replies within one thread, addressing only comments in the same thread, and clearing bodies on soft deletion—is validated by application code rather than table-level constraints or validation triggers. Two invariants are excepted and enforced by `CHECK` constraints: a comment targets exactly one post or page, and the body stays within a hard length ceiling. Authenticated readers can insert comments directly through the Data API under RLS, bypassing application validation, and violating those two invariants corrupts target relationships or storage rather than merely degrading presentation. The database otherwise retains foreign keys and RLS for referential integrity and authorization.
