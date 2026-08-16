@@ -1,4 +1,5 @@
-import { getSiteUrl } from "@/config/site";
+const PRODUCTION_AUTH_ORIGIN = "https://lsyfighting.cn";
+const LOCAL_AUTH_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 export function hasSupabaseEnv() {
   return Boolean(
@@ -9,8 +10,9 @@ export function hasSupabaseEnv() {
 
 export function getBrowserAuthCallback(pathname: string) {
   const currentUrl = new URL(window.location.href);
-  const isLocal = ["localhost", "127.0.0.1"].includes(currentUrl.hostname);
-  const origin = isLocal ? currentUrl.origin : getSiteUrl().origin;
+  const origin = LOCAL_AUTH_HOSTS.has(currentUrl.hostname)
+    ? currentUrl.origin
+    : PRODUCTION_AUTH_ORIGIN;
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("next", sanitizeNextPath(pathname));
   return callbackUrl.toString();
@@ -18,9 +20,9 @@ export function getBrowserAuthCallback(pathname: string) {
 
 export function getTrustedRequestOrigin(requestUrl: string) {
   const requestOrigin = new URL(requestUrl);
-  return ["localhost", "127.0.0.1"].includes(requestOrigin.hostname)
+  return LOCAL_AUTH_HOSTS.has(requestOrigin.hostname)
     ? requestOrigin.origin
-    : getSiteUrl().origin;
+    : PRODUCTION_AUTH_ORIGIN;
 }
 
 export function sanitizeNextPath(value: string | null | undefined) {

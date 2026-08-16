@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   CloseIcon,
@@ -9,9 +9,8 @@ import {
   MenuIcon,
 } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useToast } from "@/components/Toast";
-import { signOut as signOutFromSupabase } from "@/features/auth/client";
 import type { Viewer } from "@/features/auth/types";
+import { useSignOut } from "@/features/auth/useSignOut";
 import { studioNavigation } from "./navigation";
 
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
@@ -77,9 +76,7 @@ export function StudioShell({
   children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const router = useRouter();
-  const { showToast } = useToast();
+  const { signingOut, signOut } = useSignOut();
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -91,20 +88,6 @@ export function StudioShell({
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [drawerOpen]);
-
-  async function handleSignOut() {
-    setSigningOut(true);
-    const { error } = await signOutFromSupabase();
-
-    if (error) {
-      setSigningOut(false);
-      showToast("退出失败，请稍后重试。", { tone: "error" });
-      return;
-    }
-
-    router.push("/?auth_notice=signed_out");
-    router.refresh();
-  }
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -133,7 +116,7 @@ export function StudioShell({
           <ThemeToggle />
           <button
             type="button"
-            onClick={handleSignOut}
+            onClick={signOut}
             disabled={signingOut}
             className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm text-muted transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60"
           >
@@ -147,11 +130,11 @@ export function StudioShell({
 
   return (
     <div className="min-h-dvh bg-background">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-background/95 p-6 backdrop-blur-sm md:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-background p-6 md:block">
         {sidebar}
       </aside>
 
-      <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-border bg-background/92 px-4 backdrop-blur-md md:hidden">
+      <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-border bg-background px-4 md:hidden">
         <div>
           <p className="font-semibold tracking-[-0.02em]">Sleepy</p>
           <p className="text-[11px] text-muted">Admin Studio</p>
@@ -172,7 +155,7 @@ export function StudioShell({
           <button
             type="button"
             aria-label="关闭导航"
-            className="absolute inset-0 bg-foreground/18 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-foreground/18"
             onClick={() => setDrawerOpen(false)}
           />
           <aside className="absolute inset-y-0 left-0 w-[min(20rem,88vw)] border-r border-border bg-background p-6 shadow-2xl">

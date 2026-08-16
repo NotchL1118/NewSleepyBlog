@@ -67,13 +67,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="false"
-        className="pointer-events-none fixed top-4 left-1/2 z-[10000] flex w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 sm:top-5 sm:left-5 sm:translate-x-0"
+        className="pointer-events-none fixed top-4 left-4 z-[10000] flex w-[min(28rem,calc(100vw-2rem))] flex-col gap-2 sm:top-5 sm:left-5"
       >
         {toasts.map((toast) => (
           <div
             key={toast.id}
             role={toast.tone === "error" ? "alert" : "status"}
-            className={`pointer-events-auto flex items-start gap-3 rounded-2xl border bg-background/95 px-4 py-3 text-sm shadow-lg backdrop-blur-md ${
+            className={`pointer-events-auto flex items-start gap-3 rounded-2xl border bg-background px-4 py-3 text-sm shadow-lg ${
               toast.tone === "error" ? "border-foreground/20" : "border-border"
             }`}
           >
