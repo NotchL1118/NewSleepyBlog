@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthFeedback } from "@/components/AuthFeedback";
+import { ToastProvider } from "@/components/Toast";
+import { getSiteUrl, siteConfig } from "@/config/site";
 import "./globals.css";
+import "./theme-transitions.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sleepy",
-  description: "A calm personal blog",
+  metadataBase: getSiteUrl(),
+  title: {
+    default: siteConfig.name,
+    template: `%s · ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -23,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="zh-CN"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased motion-reduce:scroll-auto`}
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider
@@ -32,7 +40,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <ToastProvider>
+            {children}
+            <AuthFeedback />
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

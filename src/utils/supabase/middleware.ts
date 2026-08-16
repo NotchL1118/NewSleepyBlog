@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { hasSupabaseEnv } from "@/features/auth/config";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -8,6 +9,12 @@ export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
+
+  if (!hasSupabaseEnv()) {
+    return request.nextUrl.pathname.startsWith("/dashboard")
+      ? NextResponse.redirect(new URL("/", request.url))
+      : supabaseResponse;
+  }
 
   const supabase = createServerClient(supabaseUrl!, supabaseKey!, {
     cookies: {
@@ -31,7 +38,18 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+
+  if (
+    request.nextUrl.pathname.startsWith("/dashboard") &&
+    !data?.claims
+  ) {
+    const redirectResponse = NextResponse.redirect(new URL("/", request.url));
+    supabaseResponse.cookies.getAll().forEach((cookie) =>
+      redirectResponse.cookies.set(cookie),
+    );
+    return redirectResponse;
+  }
 
   return supabaseResponse;
 }

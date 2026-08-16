@@ -6,7 +6,7 @@ This document captures the agreed first-release database design for Sleepy. It i
 
 The database supports:
 
-- one author and administrator;
+- one Admin;
 - regular posts and heartworks stored as variants of the same Post model;
 - code-defined Pages backed by independently editable Markdown;
 - reusable Post Groups and flat Tags;
@@ -71,14 +71,15 @@ A Comment belongs to exactly one Post or one Page. A table-level `CHECK` constra
 
 ### `private.site_admins`
 
-The allowlist that distinguishes the single site author from ordinary GitHub-authenticated readers.
+The allowlist that distinguishes the single site Admin from ordinary GitHub-authenticated readers.
 
 | Column | Type | Rules |
 | --- | --- | --- |
 | `user_id` | `uuid` | Primary key; foreign key to `auth.users(id)` with `ON DELETE CASCADE` |
 | `created_at` | `timestamptz` | Not null; defaults to `now()` |
 
-There are no roles, permission arrays, GitHub usernames, or profile fields in this table. The first author account is added after its initial GitHub login.
+There are no roles, permission arrays, GitHub usernames, or profile fields in this table. The first Admin account is added manually after its initial GitHub login.
+The table has a unique constant-expression index so that it can contain at most one row.
 
 ### `reader_profiles`
 
@@ -119,7 +120,7 @@ Constraints and indexes:
 - unique `(kind, slug)`;
 - unique index on `(kind, lower(name))`.
 
-A referenced Post Group cannot be deleted. The author must first move all Posts to another group with the same kind. Empty groups can be deleted; groups do not have an inactive state.
+A referenced Post Group cannot be deleted. The Admin must first move all Posts to another group with the same kind. Empty groups can be deleted; groups do not have an inactive state.
 
 ### `posts`
 
@@ -282,7 +283,7 @@ All exposed `public` tables have RLS enabled. Application validation improves us
 
 | Table | Policy |
 | --- | --- |
-| `posts` | Anonymous and authenticated readers can select Published and Archived rows; the author can select all rows |
+| `posts` | Anonymous and authenticated readers can select Published and Archived rows; the Admin can select all rows |
 | `pages` | Publicly selectable |
 | `post_groups` | Publicly selectable |
 | `tags` | Publicly selectable |
@@ -329,6 +330,8 @@ The helper checks the current `auth.uid()` against `private.site_admins`. If imp
 
 GitHub usernames, email addresses, profile fields, and `user_metadata` never determine administrator authorization.
 
+An authenticated-only `public.is_admin()` RPC delegates to `private.is_admin()` and returns only the boolean decision needed by the server-rendered Studio shell. It exposes neither the allowlist nor the Admin's user ID.
+
 ## Automatic database behavior
 
 The only business-table trigger is a shared `set_updated_at()` trigger on:
@@ -349,7 +352,7 @@ The first release does not design or store:
 - RSS subscriptions or email subscribers;
 - scheduled publication;
 - persisted revisions or a separate server draft beside a published record;
-- multiple authors, tenants, or RBAC;
+- multiple Admins, tenants, or RBAC;
 - Likes, favorites, or other reader interactions;
 - short-form Moments;
 - media assets or upload relationships—Markdown references third-party image hosting or OSS URLs;
