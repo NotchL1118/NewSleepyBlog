@@ -29,6 +29,16 @@ The visual style guide governs visual presentation only. Do not use it to infer 
 
 Build responsive behavior from the start; do not finish a desktop-only layout and defer mobile adaptation. Use a mobile-first approach: base styles target narrow screens, and Tailwind breakpoint variants progressively enhance wider layouts. Every page or component change must be checked at both mobile and desktop widths for readable content, usable controls, appropriate spacing, and no unintended horizontal overflow.
 
+### Icons
+
+All shared SVG icons live in a single module: `src/components/icons/index.tsx`. The inventory and reuse rules live beside it in `src/components/icons/README.md`.
+
+- **Before adding an icon**, read `src/components/icons/README.md` and reuse an existing export when it fits (same or close meaning).
+- Define each icon as a named exported function in `index.tsx` only (for example `export function MenuIcon`). Import from `@/components/icons`; do not re-declare the same SVG inline in feature or UI components.
+- Size and color via `className` / `currentColor`; keep icons decorative with `aria-hidden="true"` unless accessibility requires otherwise.
+- When you add, rename, or delete an icon, update the inventory table in `README.md` in the **same change**. Do not paste SVG paths into the README.
+- Do not create per-icon files, icon object maps, or a separate icon library package unless the task explicitly requires it.
+
 ### Demo directory
 
 Treat everything under `demo/` as isolated experimental material. Do not read, inspect, search, or use files in `demo/` as implementation references unless the user explicitly asks you to reference them for the current task.
