@@ -149,6 +149,8 @@ function publicationErrorState(
 
   if (error?.code === "23505") {
     const categoryConflict = error.message?.includes("post_groups") ?? false;
+    const categoryNameConflict =
+      error.message?.includes("post_groups_kind_name_key") ?? false;
     return {
       message: categoryConflict
         ? "这个分类名称或 Slug 已存在。"
@@ -156,7 +158,9 @@ function publicationErrorState(
       tone: "error",
       updatedAt,
       fieldErrors: categoryConflict
-        ? { categorySlug: "请确认分类名称和 Slug 均未被使用。" }
+        ? categoryNameConflict
+          ? { categoryName: "这个分类名称已被使用。" }
+          : { categorySlug: "这个分类 Slug 已被使用。" }
         : { slug: "请输入尚未被其他文章使用的 Slug。" },
     };
   }

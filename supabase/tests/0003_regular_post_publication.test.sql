@@ -180,12 +180,33 @@ select lives_ok(
   $$,
   'publishing can select an existing Regular Post Category'
 );
+
+update public.posts
+set status = 'draft'
+where id = -5001;
+
 select throws_ok(
-  $$update public.posts set slug = 'changed-after-publication' where id = -5001$$,
+  format(
+    $$
+      select public.update_post_draft(
+        p_post_id => -5001,
+        p_expected_updated_at => %L,
+        p_group_id => -5001,
+        p_title => 'Published Regular Post',
+        p_slug => 'changed-after-publication',
+        p_body_markdown => 'Published body'
+      )
+    $$,
+    (select updated_at from public.posts where id = -5001)
+  ),
   '23514',
   'Post Slug cannot change after first publication.',
   'the Post Slug locks after first publication'
 );
+
+update public.posts
+set status = 'published'
+where id = -5001;
 
 reset role;
 set local role anon;

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { cacheLife, cacheTag } from "next/cache";
 import { createPublicClient } from "@/utils/supabase/public";
 import type { Post, PostPageData, PostStatus } from "./types";
@@ -7,7 +8,8 @@ import type { Post, PostPageData, PostStatus } from "./types";
 export const REGULAR_POST_LIST_CACHE_TAG = "posts:regular:list";
 
 export function regularPostDetailCacheTag(slug: string) {
-  return `posts:regular:detail:${slug}`;
+  const slugDigest = createHash("sha256").update(slug).digest("hex");
+  return `posts:regular:detail:${slugDigest}`;
 }
 
 export async function getPublicRegularPostPage(
@@ -16,7 +18,7 @@ export async function getPublicRegularPostPage(
   "use cache";
 
   cacheLife("days");
-  cacheTag(REGULAR_POST_LIST_CACHE_TAG, regularPostDetailCacheTag(slug));
+  cacheTag(regularPostDetailCacheTag(slug));
 
   const supabase = createPublicClient();
   const { data, error } = await supabase

@@ -1,26 +1,3 @@
-create or replace function public.enforce_post_immutable_fields()
-returns trigger
-language plpgsql
-security invoker
-set search_path = ''
-as $$
-begin
-  if new.kind is distinct from old.kind then
-    raise exception using
-      errcode = '23514',
-      message = 'Post kind cannot change after creation.';
-  end if;
-
-  if old.published_at is not null and new.slug is distinct from old.slug then
-    raise exception using
-      errcode = '23514',
-      message = 'Post Slug cannot change after first publication.';
-  end if;
-
-  return new;
-end;
-$$;
-
 create function public.publish_regular_post(
   p_post_id bigint,
   p_expected_updated_at timestamptz,
@@ -54,7 +31,7 @@ begin
       message = 'The expected Post updated_at value is required.';
   end if;
 
-  if nullif(btrim(p_title), '') is null then
+  if p_title is null or p_title !~ '[^[:space:]]' then
     raise exception using
       errcode = '22023',
       message = 'Post title is required for publication.';
@@ -68,7 +45,7 @@ begin
       message = 'Post Slug must use lowercase ASCII kebab-case.';
   end if;
 
-  if nullif(btrim(p_body_markdown), '') is null then
+  if p_body_markdown is null or p_body_markdown !~ '[^[:space:]]' then
     raise exception using
       errcode = '22023',
       message = 'Post Markdown body is required for publication.';
@@ -83,7 +60,7 @@ begin
   end if;
 
   if p_group_id is null then
-    if nullif(btrim(p_new_group_name), '') is null then
+    if p_new_group_name is null or p_new_group_name !~ '[^[:space:]]' then
       raise exception using
         errcode = '22023',
         message = 'Category name is required.';
@@ -117,6 +94,14 @@ begin
         'Post draft %s has changed since it was loaded.',
         p_post_id
       );
+  end if;
+
+  if current_post.published_at is not null
+    and btrim(p_slug) is distinct from current_post.slug
+  then
+    raise exception using
+      errcode = '23514',
+      message = 'Post Slug cannot change after first publication.';
   end if;
 
   if p_group_id is not null then

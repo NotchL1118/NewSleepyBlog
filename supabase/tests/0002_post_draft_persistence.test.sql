@@ -2,15 +2,16 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(21);
+select plan(22);
 
 select ok(
   has_table_privilege('anon', 'public.posts', 'select'),
   'anonymous Readers receive explicit SELECT on Posts'
 );
 select ok(
-  not has_table_privilege('anon', 'public.posts', 'insert'),
-  'anonymous Readers do not receive INSERT on Posts'
+  not has_table_privilege('anon', 'public.posts', 'insert')
+    and not has_table_privilege('anon', 'public.posts', 'delete'),
+  'anonymous Readers do not receive Post write privileges'
 );
 select ok(
   has_table_privilege('authenticated', 'public.posts', 'select'),
@@ -18,7 +19,8 @@ select ok(
 );
 select ok(
   has_table_privilege('authenticated', 'public.posts', 'insert')
-    and has_table_privilege('authenticated', 'public.posts', 'update'),
+    and has_table_privilege('authenticated', 'public.posts', 'update')
+    and has_table_privilege('authenticated', 'public.posts', 'delete'),
   'authenticated callers receive the table privileges required by Admin RLS'
 );
 select ok(
@@ -164,6 +166,11 @@ select throws_ok(
   'new row violates row-level security policy for table "post_groups"',
   'an authenticated Reader cannot create a Post Group'
 );
+select results_eq(
+  $$delete from public.posts where id = -3001 returning id$$,
+  array[]::bigint[],
+  'an authenticated Reader cannot delete a Post'
+);
 
 reset role;
 set local role authenticated;
@@ -201,12 +208,6 @@ select ok(
   ),
   'the incomplete Draft Post persists all optional fields as empty'
 );
-select throws_ok(
-  $$update public.posts set kind = 'heartwork' where id = -3003$$,
-  '23514',
-  'Post kind cannot change after creation.',
-  'Post kind cannot change after creation'
-);
 select lives_ok(
   $$
     select public.update_post_draft(
@@ -239,6 +240,11 @@ select results_eq(
   $$select title from public.posts where id = -3003$$,
   array['Resumable draft'::text],
   'a rejected stale update does not overwrite newer content'
+);
+select results_eq(
+  $$delete from public.posts where id = -3001 returning id$$,
+  array[-3001::bigint],
+  'the Admin can delete a Post through RLS'
 );
 
 reset role;

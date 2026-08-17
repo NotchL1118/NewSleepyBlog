@@ -46,9 +46,9 @@ create table public.posts (
     check (
       status = 'draft'
       or (
-        nullif(btrim(title), '') is not null
+        title ~ '[^[:space:]]'
         and nullif(btrim(slug), '') is not null
-        and nullif(btrim(body_markdown), '') is not null
+        and body_markdown ~ '[^[:space:]]'
         and group_id is not null
         and published_at is not null
       )
@@ -89,30 +89,9 @@ begin
 end;
 $$;
 
-create function public.enforce_post_immutable_fields()
-returns trigger
-language plpgsql
-security invoker
-set search_path = ''
-as $$
-begin
-  if new.kind is distinct from old.kind then
-    raise exception using
-      errcode = '23514',
-      message = 'Post kind cannot change after creation.';
-  end if;
-
-  return new;
-end;
-$$;
-
 create trigger post_groups_set_updated_at
 before update on public.post_groups
 for each row execute function public.set_updated_at();
-
-create trigger posts_enforce_immutable_fields
-before update on public.posts
-for each row execute function public.enforce_post_immutable_fields();
 
 create trigger posts_set_updated_at
 before update on public.posts
@@ -174,13 +153,19 @@ to authenticated
 using ((select private.is_admin()))
 with check ((select private.is_admin()));
 
+create policy "Admin can delete Posts"
+on public.posts
+for delete
+to authenticated
+using ((select private.is_admin()));
+
 revoke all on table public.post_groups, public.posts
   from public, anon, authenticated;
 grant select on table public.post_groups, public.posts
   to anon, authenticated;
 grant insert, update, delete on table public.post_groups
   to authenticated;
-grant insert, update on table public.posts
+grant insert, update, delete on table public.posts
   to authenticated;
 
 revoke all on sequence public.post_groups_id_seq, public.posts_id_seq
@@ -267,26 +252,11 @@ begin
       message = 'The expected Post updated_at value is required.';
   end if;
 
-  update public.posts
-  set
-    group_id = p_group_id,
-    title = p_title,
-    slug = p_slug,
-    summary = p_summary,
-    body_markdown = coalesce(p_body_markdown, '')
-  where id = p_post_id
-    and status = 'draft'
-    and updated_at = p_expected_updated_at
-  returning * into updated_post;
-
-  if found then
-    return updated_post;
-  end if;
-
   select *
   into current_post
   from public.posts
-  where id = p_post_id;
+  where id = p_post_id
+  for update;
 
   if not found then
     raise exception using
@@ -300,12 +270,34 @@ begin
       message = format('Post %s is not a Draft Post.', p_post_id);
   end if;
 
-  raise exception using
-    errcode = '40001',
-    message = format(
-      'Post draft %s has changed since it was loaded.',
-      p_post_id
-    );
+  if current_post.updated_at <> p_expected_updated_at then
+    raise exception using
+      errcode = '40001',
+      message = format(
+        'Post draft %s has changed since it was loaded.',
+        p_post_id
+      );
+  end if;
+
+  if current_post.published_at is not null
+    and p_slug is distinct from current_post.slug
+  then
+    raise exception using
+      errcode = '23514',
+      message = 'Post Slug cannot change after first publication.';
+  end if;
+
+  update public.posts
+  set
+    group_id = p_group_id,
+    title = p_title,
+    slug = p_slug,
+    summary = p_summary,
+    body_markdown = coalesce(p_body_markdown, '')
+  where id = p_post_id
+  returning * into updated_post;
+
+  return updated_post;
 end;
 $$;
 
@@ -313,8 +305,6 @@ comment on function public.update_post_draft(bigint, timestamptz, bigint, text, 
   'Updates a Draft Post only when its observed updated_at value is current.';
 
 revoke all on function public.set_updated_at()
-  from public, anon, authenticated;
-revoke all on function public.enforce_post_immutable_fields()
   from public, anon, authenticated;
 revoke all on function public.create_post_draft(text, bigint, text, text, text, text)
   from public, anon;

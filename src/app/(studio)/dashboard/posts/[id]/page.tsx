@@ -7,7 +7,6 @@ import {
 } from "@/features/posts/drafts";
 
 export const metadata: Metadata = { title: "编辑普通文章草稿" };
-export const instant = false;
 
 export default async function Page({
   params,
