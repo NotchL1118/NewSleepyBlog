@@ -21,8 +21,8 @@ export function postDetailCacheTag(slug: string) {
 
 type PublicPostRow = {
   id: number;
-  kind: string;
-  status: string;
+  kind: PostKind;
+  status: PostStatus;
   slug: string | null;
   title: string | null;
   summary: string | null;
@@ -41,7 +41,7 @@ type AdjacentPostRow = Pick<
 function toPostPreview(row: PublicPostRow): PostPreview {
   return {
     id: row.id,
-    kind: row.kind as PostKind,
+    kind: row.kind,
     slug: row.slug!,
     title: row.title!,
     summary: row.summary ?? undefined,
@@ -55,7 +55,7 @@ function toAdjacentPost(row: AdjacentPostRow | null): AdjacentPost | undefined {
   if (!row) return undefined;
 
   return {
-    kind: row.kind as PostKind,
+    kind: row.kind,
     slug: row.slug!,
     title: row.title!,
     group: row.post_groups,
@@ -121,7 +121,7 @@ export async function getPublicRegularPostPage(
   const post: Post = {
     id: row.id,
     kind: "regular",
-    status: row.status as PostStatus,
+    status: row.status,
     slug: row.slug!,
     title: row.title!,
     summary: row.summary ?? undefined,
