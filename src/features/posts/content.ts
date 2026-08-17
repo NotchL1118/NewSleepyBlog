@@ -8,6 +8,16 @@ import { postFixtures } from "./fixtures";
 import type { AdjacentPost, Post, PostHeading, PostKind, PostPageData, PostRoute } from "./types";
 
 const PUBLIC_STATUSES = new Set(["published", "archived"]);
+const POST_DESCRIPTION_LENGTH = 160;
+
+function markdownPlainText(markdown: string) {
+  const tree = unified().use(remarkParse).parse(markdown);
+  return tree.children
+    .map((node) => toString(node))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function toAdjacentPost(post: Post): AdjacentPost {
   return {
@@ -54,13 +64,27 @@ export function postGroupLabel(kind: PostKind) {
 }
 
 export function estimateReadingMinutes(markdown: string) {
-  const plainText = markdown
-    .replace(/~~~[\s\S]*?~~~/g, " ")
-    .replace(/[`*_>#|\[\]()-]/g, " ");
+  const plainText = markdownPlainText(markdown);
   const hanCharacters = plainText.match(/[\u3400-\u9fff]/g)?.length ?? 0;
-  const latinWords = plainText.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g)?.length ?? 0;
+  const latinWords = plainText.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g)?.length ?? 0;
 
   return Math.max(1, Math.ceil(hanCharacters / 400 + latinWords / 220));
+}
+
+export function postDescription(
+  post: Pick<Post, "bodyMarkdown" | "summary">,
+  fallback: string,
+) {
+  const summary = post.summary?.trim();
+  if (summary) return summary;
+
+  const plainText = markdownPlainText(post.bodyMarkdown);
+  if (!plainText) return fallback;
+
+  const characters = Array.from(plainText);
+  if (characters.length <= POST_DESCRIPTION_LENGTH) return plainText;
+
+  return `${characters.slice(0, POST_DESCRIPTION_LENGTH).join("")}…`;
 }
 
 export function extractPostHeadings(markdown: string): readonly PostHeading[] {

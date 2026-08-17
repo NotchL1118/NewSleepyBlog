@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PostContentPage } from "@/components/PostContentPage";
-import { getPostPage, postPath } from "./content";
+import { siteConfig } from "@/config/site";
+import { getPostPage, postDescription, postPath } from "./content";
 import { getPublicRegularPostPage } from "./public-posts";
 import type { PostKind } from "./types";
 
@@ -39,8 +40,9 @@ export async function buildPostMetadata(
   }
 
   const { post } = page;
-  const description = post.summary ?? post.overview;
+  const description = postDescription(post, siteConfig.description);
   const canonical = postPath(post);
+  const hasDistinctUpdate = post.updatedAt !== post.publishedAt;
 
   return {
     title: post.title,
@@ -52,7 +54,7 @@ export async function buildPostMetadata(
       title: post.title,
       description,
       publishedTime: post.publishedAt,
-      modifiedTime: post.updatedAt,
+      modifiedTime: hasDistinctUpdate ? post.updatedAt : undefined,
       tags: [...post.tags],
     },
   };

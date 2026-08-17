@@ -60,7 +60,7 @@
   margin-top: 2.1rem;
 }
 
-.overview {
+.summary {
   margin-bottom: 2.25rem;
   padding: 1.3rem 1.5rem;
   border-block: 1px solid var(--border);
@@ -70,7 +70,7 @@
   line-height: 1.85;
 }
 
-.overview strong {
+.summary strong {
   display: block;
   margin-bottom: 0.4rem;
   color: var(--foreground);
@@ -79,7 +79,7 @@
   text-transform: uppercase;
 }
 
-.overview p {
+.summary p {
   margin: 0;
 }
 
@@ -401,7 +401,7 @@
     margin-right: 0.7rem;
   }
 
-  .overview {
+  .summary {
     padding: 1rem 1.1rem;
   }
 

@@ -32,6 +32,7 @@ export async function PostContentPage({ page }: { page: PostPageData }) {
   const headings = extractPostHeadings(post.bodyMarkdown);
   const readingMinutes = estimateReadingMinutes(post.bodyMarkdown);
   const readingClass = post.kind === "heartwork" ? styles.heartworkReading : styles.regularReading;
+  const hasDistinctUpdate = post.updatedAt !== post.publishedAt;
 
   return (
     <main className="pb-36 pt-8 sm:pt-10 min-[821px]:pt-12">
@@ -48,9 +49,11 @@ export async function PostContentPage({ page }: { page: PostPageData }) {
             <span>
               发布于 <time dateTime={post.publishedAt}>{dateFormatter.format(new Date(post.publishedAt))}</time>
             </span>
-            <span>
-              更新于 <time dateTime={post.updatedAt}>{dateFormatter.format(new Date(post.updatedAt))}</time>
-            </span>
+            {hasDistinctUpdate ? (
+              <span>
+                更新于 <time dateTime={post.updatedAt}>{dateFormatter.format(new Date(post.updatedAt))}</time>
+              </span>
+            ) : null}
             <span>{readingMinutes} 分钟阅读</span>
           </div>
           {post.status === "archived" ? (
@@ -63,10 +66,10 @@ export async function PostContentPage({ page }: { page: PostPageData }) {
 
         <div className={`${styles.reading} ${readingClass}`}>
           <TableOfContents headings={headings} />
-          {post.overview ? (
-            <aside className={styles.overview} aria-label="全文概述">
-              <strong>全文概述</strong>
-              <p>{post.overview}</p>
+          {post.summary ? (
+            <aside className={styles.summary} aria-label="文章摘要">
+              <strong>摘要</strong>
+              <p>{post.summary}</p>
             </aside>
           ) : null}
           <MarkdownContent kind={post.kind}>{post.bodyMarkdown}</MarkdownContent>

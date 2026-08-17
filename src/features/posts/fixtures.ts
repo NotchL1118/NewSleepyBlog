@@ -111,8 +111,6 @@ export const postFixtures: readonly Post[] = [
     slug: "make-complex-things-clear",
     title: "把复杂的事情，慢慢说清楚",
     summary: "关于表达、系统设计，以及为什么好的边界往往比聪明的实现更重要。",
-    overview:
-      "本文从问题识别、信息节奏和可替换边界三个角度，梳理如何让复杂内容更容易被理解，并用文章读取接口作为具体例子。",
     bodyMarkdown: regularPostBody,
     group: { name: "技术", slug: "technology" },
     tags: ["系统设计", "写作", "边界"],
@@ -126,8 +124,6 @@ export const postFixtures: readonly Post[] = [
     slug: "what-to-read-at-night",
     title: "夜里适合读些什么",
     summary: "一些不急着得出结论的书、文章与琐碎想法。",
-    overview:
-      "这篇心作从夜间阅读的经验出发，谈文字如何暂时放下结论，让注意力重新回到那些白天容易错过的细小感受。",
     bodyMarkdown: heartworkBody,
     group: { name: "所思所想", slug: "reflections" },
     tags: ["夜读", "日常"],
@@ -141,8 +137,6 @@ export const postFixtures: readonly Post[] = [
     slug: "first-personal-site-workflow",
     title: "我的第一套个人网站工作流",
     summary: "一份留在原处的旧实践：它已经不再代表我的当前选择，但仍记录了当时解决问题的方式。",
-    overview:
-      "这篇文章回顾了早期个人网站工作流的组织方式，也解释了它后来为何被新的内容模型取代。你仍可以把它作为一次阶段性实践来阅读。",
     bodyMarkdown: archivedPostBody,
     group: { name: "折腾", slug: "tinkering" },
     tags: ["个人网站", "工作流", "归档"],

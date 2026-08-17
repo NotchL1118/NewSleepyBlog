@@ -13,7 +13,6 @@ export type Post = {
   slug: string;
   title: string;
   summary?: string;
-  overview?: string;
   bodyMarkdown: string;
   group: PostGroup;
   tags: readonly string[];
@@ -21,6 +20,18 @@ export type Post = {
   updatedAt: string;
   archiveNote?: string;
 };
+
+export type PostPreview = Pick<
+  Post,
+  | "bodyMarkdown"
+  | "group"
+  | "id"
+  | "kind"
+  | "publishedAt"
+  | "slug"
+  | "summary"
+  | "title"
+>;
 
 export type AdjacentPost = Pick<Post, "kind" | "slug" | "title" | "group">;
 

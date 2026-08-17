@@ -6,8 +6,8 @@ import { requireAdmin } from "@/features/auth/server";
 import { createClient } from "@/utils/supabase/server";
 import type { Database } from "@/types/database.generated";
 import {
-  REGULAR_POST_LIST_CACHE_TAG,
-  regularPostDetailCacheTag,
+  POST_LIST_CACHE_TAG,
+  postDetailCacheTag,
 } from "./public-posts";
 
 export type DraftField =
@@ -344,8 +344,8 @@ export async function publishRegularPost(
 
   let cacheRefreshFailed = false;
   for (const tag of [
-    REGULAR_POST_LIST_CACHE_TAG,
-    regularPostDetailCacheTag(data.slug),
+    POST_LIST_CACHE_TAG,
+    postDetailCacheTag(data.slug),
   ]) {
     try {
       updateTag(tag);
