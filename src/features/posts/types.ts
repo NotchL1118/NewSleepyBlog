@@ -13,7 +13,7 @@ export type Post = {
   slug: string;
   title: string;
   summary?: string;
-  overview: string;
+  overview?: string;
   bodyMarkdown: string;
   group: PostGroup;
   tags: readonly string[];

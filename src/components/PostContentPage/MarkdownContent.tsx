@@ -1,4 +1,5 @@
 import { MarkdownAsync } from "react-markdown";
+import { cacheLife } from "next/cache";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
@@ -10,6 +11,9 @@ type MarkdownContentProps = {
 };
 
 export async function MarkdownContent({ children, kind }: MarkdownContentProps) {
+  "use cache";
+  cacheLife("max");
+
   return (
     <div className={`${styles.prose} ${kind === "heartwork" ? styles.heartworkProse : styles.regularProse}`}>
       <MarkdownAsync

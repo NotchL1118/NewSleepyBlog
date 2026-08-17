@@ -2,13 +2,12 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/components/Toast";
+import { showToast } from "@/components/Toast";
 import { signOut as signOutFromSupabase } from "./client";
 
 export function useSignOut() {
   const [signingOut, setSigningOut] = useState(false);
   const router = useRouter();
-  const { showToast } = useToast();
 
   const signOut = useCallback(async () => {
     setSigningOut(true);
@@ -22,7 +21,7 @@ export function useSignOut() {
 
     router.push("/?auth_notice=signed_out");
     router.refresh();
-  }, [router, showToast]);
+  }, [router]);
 
   return { signingOut, signOut };
 }

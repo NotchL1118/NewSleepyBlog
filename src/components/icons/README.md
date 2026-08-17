@@ -22,6 +22,7 @@ Do not paste SVG paths here.
 | `FolderIcon` | Categories and Columns | Default `size-5` |
 | `GitHubIcon` | GitHub brand mark | Default `size-[18px]`; filled |
 | `HeartIcon` | Heartworks | Default `size-5` |
+| `HomeIcon` | Return to the public homepage | Default `size-5` |
 | `LogOutIcon` | End the current session | Default `size-5` |
 | `MenuIcon` | Open navigation menu | Default `size-5`; two-line stroke |
 | `MoonIcon` | Dark theme affordance | Default `size-[17px]` |

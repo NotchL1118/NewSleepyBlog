@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useToast } from "@/components/Toast";
+import { showToast } from "@/components/Toast";
 
 const authMessages: Record<string, string> = {
   oauth_callback: "GitHub 登录没有完成，请重新尝试。",
@@ -9,8 +9,6 @@ const authMessages: Record<string, string> = {
 };
 
 export function AuthFeedback() {
-  const { showToast } = useToast();
-
   useEffect(() => {
     const url = new URL(window.location.href);
     const error = url.searchParams.get("auth_error");
@@ -31,7 +29,7 @@ export function AuthFeedback() {
     if (error || notice) {
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     }
-  }, [showToast]);
+  }, []);
 
   return null;
 }

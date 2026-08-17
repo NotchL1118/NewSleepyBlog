@@ -118,7 +118,8 @@ Constraints and indexes:
 
 - unique `(id, kind)`, used as the composite foreign-key target from Posts;
 - unique `(kind, slug)`;
-- unique index on `(kind, lower(name))`.
+- unique index on `(kind, lower(name))`;
+- `slug` matches `^[a-z0-9]+(-[a-z0-9]+)*$` and remains stable after creation.
 
 A referenced Post Group cannot be deleted. The Admin must first move all Posts to another group with the same kind. Empty groups can be deleted; groups do not have an inactive state.
 
@@ -132,7 +133,7 @@ Regular Posts and Heartworks share one table because all fields and lifecycle ru
 | `kind` | `text` | Not null; one of `regular`, `heartwork` |
 | `group_id` | `bigint` | Nullable for incomplete Drafts |
 | `title` | `text` | Nullable for incomplete Drafts |
-| `slug` | `text` | Nullable for incomplete Drafts; globally unique when present |
+| `slug` | `text` | Nullable for incomplete Drafts; globally unique when present; lowercase ASCII kebab-case |
 | `summary` | `text` | Nullable and optional in every state |
 | `body_markdown` | `text` | Not null; defaults to the empty string |
 | `status` | `text` | Not null; defaults to `draft`; one of `draft`, `published`, `archived` |
@@ -152,6 +153,7 @@ Database checks:
 
 - `kind` belongs to its allowed set;
 - `status` belongs to its allowed set;
+- a non-null Slug matches `^[a-z0-9]+(-[a-z0-9]+)*$`;
 - Published and Archived Posts have a non-blank title, non-blank Slug, non-blank Markdown body, and a Post Group;
 - Published and Archived Posts have `published_at`;
 - Archived Posts have `archived_at` and may have `archive_note`;
@@ -161,6 +163,7 @@ Application-maintained invariants:
 
 - `kind` cannot change after creation;
 - the Slug cannot change after first publication;
+- updates compare the Admin editor's previously observed `updated_at` value and reject stale writes;
 - `published_at` records first publication and survives withdrawal to Draft and later republication;
 - publishing modifies the current record directly; there is no separately persisted revision draft;
 - restoring or withdrawing an Archived Post clears `archived_at` and `archive_note`.
@@ -215,7 +218,8 @@ Flat, reusable, optional labels shared by Regular Posts and Heartworks.
 Constraints and indexes:
 
 - unique `slug`;
-- unique index on `lower(name)`.
+- unique index on `lower(name)`;
+- `slug` matches `^[a-z0-9]+(-[a-z0-9]+)*$` and remains stable after creation.
 
 Tags are not hierarchical. They may be created from the Post editor or a dedicated management screen. Deleting a Tag removes its Post relationships but does not delete Posts.
 

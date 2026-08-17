@@ -1,0 +1,3 @@
+# Cache public content with Cache Components
+
+Sleepy enables Next.js Cache Components and caches shared public-content reads with `use cache`, explicit cache lifetimes, and content-specific tags. Public Posts are read through a session-independent client and mutations invalidate affected list and detail tags immediately; Admin-scoped Studio reads remain dynamic and outside shared cache scopes. We chose this over request-time reads and the superseded `unstable_cache` API because Posts change infrequently, are read publicly many times, and should become fresh immediately after an Admin mutation, accepting the one-time cost of migrating every route to the Cache Components rendering model.

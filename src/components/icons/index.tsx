@@ -189,6 +189,15 @@ export function SettingsIcon(props: IconProps) {
   );
 }
 
+export function HomeIcon(props: IconProps) {
+  return (
+    <LineIcon {...props}>
+      <path d="M4 11.5 12 4.5l8 7V20a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20z" />
+      <path d="M9.5 21.5v-7h5v7" />
+    </LineIcon>
+  );
+}
+
 export function LogOutIcon(props: IconProps) {
   return (
     <LineIcon {...props}>

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes } from "react";
-import { useToast } from "@/components/Toast";
+import { showToast } from "@/components/Toast";
 
 type DemoButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "quiet";
@@ -13,7 +13,6 @@ export function DemoButton({
   variant = "secondary",
   ...props
 }: DemoButtonProps) {
-  const { showToast } = useToast();
   const variants = {
     primary: "bg-foreground text-background hover:opacity-85",
     secondary: "border border-border bg-background hover:bg-surface",

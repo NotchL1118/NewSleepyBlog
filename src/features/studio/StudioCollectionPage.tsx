@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/features/auth/server";
 import { DemoButton } from "./DemoButton";
 import type { StudioCollection } from "./fixtures";
@@ -12,8 +13,10 @@ function Status({ value }: { value: string }) {
 
 export async function StudioCollectionPage({
   collection,
+  actionHref,
 }: {
   collection: StudioCollection;
+  actionHref?: string;
 }) {
   await requireAdmin();
 
@@ -31,7 +34,16 @@ export async function StudioCollectionPage({
             {collection.description}
           </p>
         </div>
-        <DemoButton variant="primary">{collection.actionLabel}</DemoButton>
+        {actionHref ? (
+          <Link
+            href={actionHref}
+            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {collection.actionLabel}
+          </Link>
+        ) : (
+          <DemoButton variant="primary">{collection.actionLabel}</DemoButton>
+        )}
       </header>
 
       <section className="mt-9 overflow-hidden rounded-2xl border border-border bg-background">

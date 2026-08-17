@@ -13,7 +13,7 @@ import {
   UserIcon,
 } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useToast } from "@/components/Toast";
+import { showToast } from "@/components/Toast";
 import { signInWithGitHub } from "@/features/auth/client";
 import type { Viewer } from "@/features/auth/types";
 import { useSignOut } from "@/features/auth/useSignOut";
@@ -176,7 +176,6 @@ function AccountMenu(props: AccountActionsProps) {
 
 export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
   const pathname = usePathname();
-  const { showToast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginPending, setLoginPending] = useState(false);
   const { signingOut, signOut } = useSignOut();

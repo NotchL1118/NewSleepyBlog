@@ -5,12 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   CloseIcon,
-  LogOutIcon,
+  HomeIcon,
   MenuIcon,
 } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { Viewer } from "@/features/auth/types";
-import { useSignOut } from "@/features/auth/useSignOut";
 import { studioNavigation } from "./navigation";
 
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
@@ -76,7 +75,6 @@ export function StudioShell({
   children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { signingOut, signOut } = useSignOut();
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -114,15 +112,13 @@ export function StudioShell({
         <AdminSummary viewer={viewer} />
         <div className="mt-4 flex items-center gap-1">
           <ThemeToggle />
-          <button
-            type="button"
-            onClick={signOut}
-            disabled={signingOut}
-            className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm text-muted transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60"
+          <Link
+            href="/"
+            className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm text-muted transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
           >
-            <LogOutIcon className="size-[17px]" />
-            {signingOut ? "正在退出…" : "退出"}
-          </button>
+            <HomeIcon className="size-[17px]" />
+            返回主页
+          </Link>
         </div>
       </div>
     </div>

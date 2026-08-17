@@ -63,10 +63,12 @@ export async function PostContentPage({ page }: { page: PostPageData }) {
 
         <div className={`${styles.reading} ${readingClass}`}>
           <TableOfContents headings={headings} />
-          <aside className={styles.overview} aria-label="全文概述">
-            <strong>全文概述</strong>
-            <p>{post.overview}</p>
-          </aside>
+          {post.overview ? (
+            <aside className={styles.overview} aria-label="全文概述">
+              <strong>全文概述</strong>
+              <p>{post.overview}</p>
+            </aside>
+          ) : null}
           <MarkdownContent kind={post.kind}>{post.bodyMarkdown}</MarkdownContent>
 
           {post.tags.length > 0 ? (
