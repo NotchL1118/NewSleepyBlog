@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PostContentPage } from "@/components/PostContentPage";
 import { siteConfig } from "@/config/site";
-import { getPostPage, postDescription, postPath } from "./content";
-import { getPublicRegularPostPage } from "./public-posts";
+import { postDescription, postPath } from "./content";
+import { getPublicPostPage } from "./public-posts";
 import type { PostKind } from "./types";
 
 export type PostRouteProps = {
@@ -11,9 +11,7 @@ export type PostRouteProps = {
 };
 
 function getPostPageForKind(slug: string, expectedKind: PostKind) {
-  return expectedKind === "regular"
-    ? getPublicRegularPostPage(slug)
-    : getPostPage(slug);
+  return getPublicPostPage(slug, expectedKind);
 }
 
 export async function renderPostRoute({ params }: PostRouteProps, expectedKind: PostKind) {

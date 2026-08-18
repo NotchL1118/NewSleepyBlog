@@ -1,13 +1,11 @@
-import { cache } from "react";
 import GithubSlugger from "github-slugger";
 import { toString } from "mdast-util-to-string";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
-import { postFixtures } from "./fixtures";
-import type { AdjacentPost, Post, PostHeading, PostKind, PostPageData, PostRoute } from "./types";
+import { postKindOptions } from "./post-kinds";
+import type { Post, PostHeading, PostKind } from "./types";
 
-const PUBLIC_STATUSES = new Set(["published", "archived"]);
 const POST_DESCRIPTION_LENGTH = 160;
 
 function markdownPlainText(markdown: string) {
@@ -19,48 +17,16 @@ function markdownPlainText(markdown: string) {
     .trim();
 }
 
-function toAdjacentPost(post: Post): AdjacentPost {
-  return {
-    kind: post.kind,
-    slug: post.slug,
-    title: post.title,
-    group: post.group,
-  };
-}
-
-export const getPostPage = cache(async (slug: string): Promise<PostPageData | undefined> => {
-  const post = postFixtures.find((candidate) => candidate.slug === slug && PUBLIC_STATUSES.has(candidate.status));
-
-  if (!post) return undefined;
-
-  const siblings = postFixtures
-    .filter((candidate) => candidate.kind === post.kind && PUBLIC_STATUSES.has(candidate.status))
-    .toSorted((a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt));
-  const index = siblings.findIndex((candidate) => candidate.id === post.id);
-
-  return {
-    post,
-    previousPost: index > 0 ? toAdjacentPost(siblings[index - 1]) : undefined,
-    nextPost: index < siblings.length - 1 ? toAdjacentPost(siblings[index + 1]) : undefined,
-  };
-});
-
-export async function listPostRoutes(): Promise<readonly PostRoute[]> {
-  return postFixtures
-    .filter((post) => PUBLIC_STATUSES.has(post.status))
-    .map(({ kind, slug }) => ({ kind, slug }));
-}
-
 export function postPath(post: Pick<Post, "kind" | "slug">) {
-  return post.kind === "regular" ? `/posts/${post.slug}` : `/heartworks/${post.slug}`;
+  return `${postKindOptions[post.kind].publicBasePath}/${post.slug}`;
 }
 
 export function postKindLabel(kind: PostKind) {
-  return kind === "regular" ? "普通文章" : "心作";
+  return postKindOptions[kind].singularLabel;
 }
 
 export function postGroupLabel(kind: PostKind) {
-  return kind === "regular" ? "分类" : "专栏";
+  return postKindOptions[kind].groupLabel;
 }
 
 export function estimateReadingMinutes(markdown: string) {

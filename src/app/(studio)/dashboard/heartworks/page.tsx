@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
-import { StudioCollectionPage } from "@/features/studio/StudioCollectionPage";
-import { studioCollections } from "@/features/studio/fixtures";
+import { PostList } from "@/features/posts/PostList";
+import {
+  readPostListFilters,
+  type PostListSearchParams,
+} from "@/features/posts/studio-post-filters";
 
 export const metadata: Metadata = { title: "心作" };
-export default function Page() { return <StudioCollectionPage collection={studioCollections.heartworks} />; }
+export const instant = false;
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<PostListSearchParams>;
+}) {
+  const { page, status } = readPostListFilters(await searchParams);
+
+  return <PostList kind="heartwork" page={page} status={status} />;
+}

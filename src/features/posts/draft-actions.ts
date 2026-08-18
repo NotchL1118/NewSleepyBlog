@@ -9,11 +9,13 @@ import {
   POST_LIST_CACHE_TAG,
   postDetailCacheTag,
 } from "./public-posts";
+import { isPostKind, postKindOptions } from "./post-kinds";
+import type { PostKind } from "./types";
 
 export type DraftField =
   | "bodyMarkdown"
-  | "categoryName"
-  | "categorySlug"
+  | "groupName"
+  | "groupSlug"
   | "groupId"
   | "slug"
   | "title";
@@ -40,8 +42,8 @@ type CreateDraftArgs =
   Database["public"]["Functions"]["create_post_draft"]["Args"];
 type UpdateDraftArgs =
   Database["public"]["Functions"]["update_post_draft"]["Args"];
-type PublishRegularPostArgs =
-  Database["public"]["Functions"]["publish_regular_post"]["Args"];
+type PublishPostArgs =
+  Database["public"]["Functions"]["publish_post"]["Args"];
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -54,14 +56,17 @@ function optionalText(value: string) {
   return value.trim() ? value : null;
 }
 
-function readDraftValues(formData: FormData): DraftValues | DraftActionState {
+function readDraftValues(
+  formData: FormData,
+  kind: PostKind,
+): DraftValues | DraftActionState {
   const groupIdValue = readString(formData, "groupId");
   const groupId = groupIdValue ? Number(groupIdValue) : null;
   const slug = optionalText(readString(formData, "slug")?.trim());
 
   if (groupId !== null && (!Number.isSafeInteger(groupId) || groupId <= 0)) {
     return {
-      message: "请选择有效的分类。",
+      message: `请选择有效的${postKindOptions[kind].groupLabel}。`,
       tone: "error",
       updatedAt: readString(formData, "expectedUpdatedAt") || null,
     };
@@ -106,6 +111,7 @@ function mutationErrorState(
   code: string | undefined,
   fallback: string,
   updatedAt: string | null,
+  kind: PostKind,
 ): DraftActionState {
   if (code === "40001") {
     return {
@@ -126,7 +132,7 @@ function mutationErrorState(
 
   if (code === "23503") {
     return {
-      message: "所选分类不存在，或不属于普通文章。",
+      message: `所选${postKindOptions[kind].groupLabel}不存在，或不属于${postKindOptions[kind].singularLabel}。`,
       tone: "error",
       updatedAt,
     };
@@ -138,7 +144,10 @@ function mutationErrorState(
 function publicationErrorState(
   error: { code?: string; message?: string } | null,
   updatedAt: string,
+  kind: PostKind,
 ): DraftActionState {
+  const options = postKindOptions[kind];
+
   if (error?.code === "40001") {
     return {
       message: "这篇草稿已在别处更新。请重新加载后再发布。",
@@ -148,29 +157,31 @@ function publicationErrorState(
   }
 
   if (error?.code === "23505") {
-    const categoryConflict = error.message?.includes("post_groups") ?? false;
-    const categoryNameConflict =
+    const groupConflict = error.message?.includes("post_groups") ?? false;
+    const groupNameConflict =
       error.message?.includes("post_groups_kind_name_key") ?? false;
     return {
-      message: categoryConflict
-        ? "这个分类名称或 Slug 已存在。"
+      message: groupConflict
+        ? `这个${options.groupLabel}名称或 Slug 已存在。`
         : "这个文章 Slug 已被使用。",
       tone: "error",
       updatedAt,
-      fieldErrors: categoryConflict
-        ? categoryNameConflict
-          ? { categoryName: "这个分类名称已被使用。" }
-          : { categorySlug: "这个分类 Slug 已被使用。" }
+      fieldErrors: groupConflict
+        ? groupNameConflict
+          ? { groupName: `这个${options.groupLabel}名称已被使用。` }
+          : { groupSlug: `这个${options.groupLabel} Slug 已被使用。` }
         : { slug: "请输入尚未被其他文章使用的 Slug。" },
     };
   }
 
   if (error?.code === "23503") {
     return {
-      message: "所选分类不存在，或不属于普通文章。",
+      message: `所选${options.groupLabel}不存在，或不属于${options.singularLabel}。`,
       tone: "error",
       updatedAt,
-      fieldErrors: { groupId: "请重新选择普通文章分类。" },
+      fieldErrors: {
+        groupId: `请重新选择${options.singularLabel}${options.groupLabel}。`,
+      },
     };
   }
 
@@ -181,17 +192,22 @@ function publicationErrorState(
   };
 }
 
-export async function createRegularPostDraft(
+export async function createPostDraft(
+  kind: PostKind,
   _previousState: DraftActionState,
   formData: FormData,
 ): Promise<DraftActionState> {
   await requireAdmin();
 
-  const values = readDraftValues(formData);
+  if (!isPostKind(kind)) {
+    return { message: "文章种类无效。", tone: "error", updatedAt: null };
+  }
+
+  const values = readDraftValues(formData, kind);
   if (isActionState(values)) return values;
 
   const args = addOptionalValues<CreateDraftArgs>(
-    { p_kind: "regular" },
+    { p_kind: kind },
     values,
   );
   const supabase = await createClient();
@@ -202,18 +218,28 @@ export async function createRegularPostDraft(
       error?.code,
       "草稿暂时无法保存，请稍后重试。",
       null,
+      kind,
     );
   }
 
-  redirect(`/dashboard/posts/${data.id}`);
+  redirect(`${postKindOptions[kind].studioBasePath}/${data.id}`);
 }
 
-export async function updateRegularPostDraft(
+export async function updatePostDraft(
+  kind: PostKind,
   postId: number,
   previousState: DraftActionState,
   formData: FormData,
 ): Promise<DraftActionState> {
   await requireAdmin();
+
+  if (!isPostKind(kind)) {
+    return {
+      message: "文章种类无效。",
+      tone: "error",
+      updatedAt: previousState.updatedAt,
+    };
+  }
 
   if (!Number.isSafeInteger(postId) || postId <= 0) {
     return {
@@ -223,7 +249,7 @@ export async function updateRegularPostDraft(
     };
   }
 
-  const values = readDraftValues(formData);
+  const values = readDraftValues(formData, kind);
   if (isActionState(values)) return values;
 
   if (!values.expectedUpdatedAt) {
@@ -249,6 +275,7 @@ export async function updateRegularPostDraft(
       error?.code,
       "草稿暂时无法保存，请稍后重试。",
       values.expectedUpdatedAt,
+      kind,
     );
   }
 
@@ -259,22 +286,33 @@ export async function updateRegularPostDraft(
   };
 }
 
-export async function publishRegularPost(
+export async function publishPost(
+  kind: PostKind,
   postId: number,
   previousState: DraftActionState,
   formData: FormData,
 ): Promise<DraftActionState> {
   await requireAdmin();
 
+  if (!isPostKind(kind)) {
+    return {
+      message: "文章种类无效。",
+      tone: "error",
+      updatedAt: previousState.updatedAt,
+    };
+  }
+
+  const options = postKindOptions[kind];
+
   const updatedAt = readString(formData, "expectedUpdatedAt");
   const title = readString(formData, "title").trim();
   const slug = readString(formData, "slug").trim();
   const summary = optionalText(readString(formData, "summary"));
   const bodyMarkdown = readString(formData, "bodyMarkdown");
-  const categoryMode = readString(formData, "categoryMode");
+  const groupMode = readString(formData, "groupMode");
   const groupIdValue = readString(formData, "groupId");
-  const categoryName = readString(formData, "categoryName").trim();
-  const categorySlug = readString(formData, "categorySlug").trim();
+  const groupName = readString(formData, "groupName").trim();
+  const groupSlug = readString(formData, "groupSlug").trim();
   const fieldErrors: Partial<Record<DraftField, string>> = {};
 
   if (!Number.isSafeInteger(postId) || postId <= 0) {
@@ -302,16 +340,18 @@ export async function publishRegularPost(
   }
 
   let groupId: number | null = null;
-  if (categoryMode === "create") {
-    if (!categoryName) fieldErrors.categoryName = "请输入分类名称。";
-    if (!slugPattern.test(categorySlug)) {
-      fieldErrors.categorySlug =
-        "分类 Slug 只能使用小写字母、数字和单个连字符。";
+  if (groupMode === "create") {
+    if (!groupName) {
+      fieldErrors.groupName = `请输入${options.groupLabel}名称。`;
+    }
+    if (!slugPattern.test(groupSlug)) {
+      fieldErrors.groupSlug =
+        `${options.groupLabel} Slug 只能使用小写字母、数字和单个连字符。`;
     }
   } else {
     groupId = Number(groupIdValue);
     if (!Number.isSafeInteger(groupId) || groupId <= 0) {
-      fieldErrors.groupId = "请选择一个普通文章分类。";
+      fieldErrors.groupId = `请选择一个${options.singularLabel}${options.groupLabel}。`;
     }
   }
 
@@ -324,22 +364,23 @@ export async function publishRegularPost(
     };
   }
 
-  const args: PublishRegularPostArgs = {
+  const args: PublishPostArgs = {
     p_post_id: postId,
+    p_expected_kind: kind,
     p_expected_updated_at: updatedAt,
     p_group_id: groupId,
-    p_new_group_name: categoryMode === "create" ? categoryName : null,
-    p_new_group_slug: categoryMode === "create" ? categorySlug : null,
+    p_new_group_name: groupMode === "create" ? groupName : null,
+    p_new_group_slug: groupMode === "create" ? groupSlug : null,
     p_title: title,
     p_slug: slug,
     p_summary: summary,
     p_body_markdown: bodyMarkdown,
   };
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("publish_regular_post", args);
+  const { data, error } = await supabase.rpc("publish_post", args);
 
   if (error || !data?.slug) {
-    return publicationErrorState(error, updatedAt);
+    return publicationErrorState(error, updatedAt, kind);
   }
 
   let cacheRefreshFailed = false;
@@ -354,7 +395,7 @@ export async function publishRegularPost(
     }
   }
 
-  const publishedPath = `/posts/${data.slug}`;
+  const publishedPath = `${options.publicBasePath}/${data.slug}`;
   if (cacheRefreshFailed) {
     return {
       message: "文章已保存并发布，但缓存刷新失败；公开页面可能会短暂显示旧内容。",

@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
-import { listPostRoutes } from "@/features/posts/content";
 import { buildPostMetadata, renderPostRoute, type PostRouteProps } from "@/features/posts/post-route";
 
-export async function generateStaticParams() {
-  const routes = await listPostRoutes();
-  return routes.filter((route) => route.kind === "heartwork").map(({ slug }) => ({ slug }));
-}
+export const instant = false;
 
 export function generateMetadata(props: PostRouteProps): Promise<Metadata> {
   return buildPostMetadata(props, "heartwork");

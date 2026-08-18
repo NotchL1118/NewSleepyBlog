@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DraftEditor } from "@/features/posts/DraftEditor";
 import { getPostDraft, getPostGroups } from "@/features/posts/drafts";
 
-export const metadata: Metadata = { title: "编辑普通文章草稿" };
+export const metadata: Metadata = { title: "编辑心作草稿" };
 
 export default async function Page({
   params,
@@ -16,11 +16,11 @@ export default async function Page({
   if (!Number.isSafeInteger(id) || id <= 0) notFound();
 
   const [draft, groups] = await Promise.all([
-    getPostDraft(id, "regular"),
-    getPostGroups("regular"),
+    getPostDraft(id, "heartwork"),
+    getPostGroups("heartwork"),
   ]);
 
   if (!draft) notFound();
 
-  return <DraftEditor draft={draft} groups={groups} kind="regular" />;
+  return <DraftEditor draft={draft} groups={groups} kind="heartwork" />;
 }

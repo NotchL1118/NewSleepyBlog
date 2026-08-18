@@ -152,6 +152,7 @@ Foreign keys and uniqueness:
 Database checks:
 
 - `kind` belongs to its allowed set;
+- `kind` cannot change after creation;
 - `status` belongs to its allowed set;
 - a non-null Slug matches `^[a-z0-9]+(-[a-z0-9]+)*$`;
 - Published and Archived Posts have a non-blank title, non-blank Slug, non-blank Markdown body, and a Post Group;
@@ -161,7 +162,6 @@ Database checks:
 
 Application-maintained invariants:
 
-- `kind` cannot change after creation;
 - the Slug cannot change after first publication;
 - updates compare the Admin editor's previously observed `updated_at` value and reject stale writes;
 - `published_at` records first publication and survives withdrawal to Draft and later republication;

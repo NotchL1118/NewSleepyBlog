@@ -90,8 +90,9 @@ export async function listRecentPosts(limit: number): Promise<readonly PostPrevi
   return (data as PublicPostRow[]).map(toPostPreview);
 }
 
-export async function getPublicRegularPostPage(
+export async function getPublicPostPage(
   slug: string,
+  kind: PostKind,
 ): Promise<PostPageData | undefined> {
   "use cache";
 
@@ -105,12 +106,12 @@ export async function getPublicRegularPostPage(
       "id, kind, status, slug, title, summary, body_markdown, published_at, updated_at, archive_note, post_groups!inner(name, slug)",
     )
     .eq("slug", slug)
-    .eq("kind", "regular")
+    .eq("kind", kind)
     .in("status", ["published", "archived"])
     .maybeSingle();
 
   if (error) {
-    throw new Error("Unable to load the Published Regular Post.", {
+    throw new Error(`Unable to load the Public ${kind} Post.`, {
       cause: error,
     });
   }
@@ -120,7 +121,7 @@ export async function getPublicRegularPostPage(
   const row = data as PublicPostRow;
   const post: Post = {
     id: row.id,
-    kind: "regular",
+    kind,
     status: row.status,
     slug: row.slug!,
     title: row.title!,

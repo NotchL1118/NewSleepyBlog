@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import {
-  createRegularPostDraft,
-  publishRegularPost,
-  updateRegularPostDraft,
+  createPostDraft,
+  publishPost,
+  updatePostDraft,
   type DraftActionState,
   type DraftField,
 } from "./draft-actions";
-import type { PostDraft, RegularPostGroup } from "./drafts";
+import type { PostDraft, PostGroupOption } from "./drafts";
+import { postKindOptions } from "./post-kinds";
+import type { PostKind } from "./types";
 
 type DraftEditorProps = {
   draft: PostDraft | null;
-  groups: RegularPostGroup[];
+  groups: PostGroupOption[];
+  kind: PostKind;
 };
 
 const emptyDraftActionState: DraftActionState = {
@@ -61,7 +64,7 @@ function EditorActions({
             ? "已发布"
             : publishPending
               ? "正在发布…"
-              : "发布文章"}
+              : "发布"}
         </button>
       ) : null}
     </div>
@@ -83,8 +86,9 @@ function FieldError({
   ) : null;
 }
 
-export function DraftEditor({ draft, groups }: DraftEditorProps) {
-  const [categoryMode, setCategoryMode] = useState<"create" | "existing">(
+export function DraftEditor({ draft, groups, kind }: DraftEditorProps) {
+  const options = postKindOptions[kind];
+  const [groupMode, setGroupMode] = useState<"create" | "existing">(
     "existing",
   );
   const [feedbackMode, setFeedbackMode] = useState<"publish" | "save">(
@@ -97,11 +101,11 @@ export function DraftEditor({ draft, groups }: DraftEditorProps) {
       }
     : emptyDraftActionState;
   const action = draft
-    ? updateRegularPostDraft.bind(null, draft.id)
-    : createRegularPostDraft;
+    ? updatePostDraft.bind(null, kind, draft.id)
+    : createPostDraft.bind(null, kind);
   const [state, formAction, pending] = useActionState(action, initialState);
   const [publishState, publishAction, publishPending] = useActionState(
-    publishRegularPost.bind(null, draft?.id ?? 0),
+    publishPost.bind(null, kind, draft?.id ?? 0),
     initialState,
   );
   const feedbackState = feedbackMode === "publish" ? publishState : state;
@@ -114,21 +118,23 @@ export function DraftEditor({ draft, groups }: DraftEditorProps) {
         name="expectedUpdatedAt"
         value={state.updatedAt ?? ""}
       />
-      <input type="hidden" name="categoryMode" value={categoryMode} />
+      <input type="hidden" name="groupMode" value={groupMode} />
 
       <header className="flex flex-col gap-5 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
-            href="/dashboard/posts"
+            href={options.studioBasePath}
             className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
           >
-            ← 返回普通文章
+            ← 返回{options.pluralLabel}
           </Link>
           <p className="mt-6 text-xs font-semibold tracking-[0.12em] text-accent uppercase">
-            普通文章 · 草稿
+            {options.singularLabel} · 草稿
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-            {draft ? draft.title?.trim() || "无标题草稿" : "新建普通文章"}
+            {draft
+              ? draft.title?.trim() || "无标题草稿"
+              : `新建${options.singularLabel}`}
           </h1>
           <p className="mt-3 text-sm leading-7 text-muted">
             {draft
@@ -190,45 +196,49 @@ export function DraftEditor({ draft, groups }: DraftEditorProps) {
             <p className="text-xs font-semibold tracking-[0.1em] text-muted uppercase">
               文章种类
             </p>
-            <p className="mt-2 text-sm font-medium">普通文章</p>
+            <p className="mt-2 text-sm font-medium">
+              {options.singularLabel}
+            </p>
             <p className="mt-1 text-xs leading-5 text-muted">创建后不可更改</p>
           </div>
 
           <fieldset className="border-t border-border pt-5">
-            <legend className="text-sm font-medium">分类</legend>
+            <legend className="text-sm font-medium">
+              {options.groupLabel}
+            </legend>
             <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-surface p-1">
               <button
                 type="button"
-                onClick={() => setCategoryMode("existing")}
-                aria-pressed={categoryMode === "existing"}
+                onClick={() => setGroupMode("existing")}
+                aria-pressed={groupMode === "existing"}
                 className={`min-h-9 rounded-lg px-2 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
-                  categoryMode === "existing"
+                  groupMode === "existing"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted hover:text-foreground"
                 }`}
               >
-                选择已有分类
+                选择已有{options.groupLabel}
               </button>
               <button
                 type="button"
-                onClick={() => setCategoryMode("create")}
-                aria-pressed={categoryMode === "create"}
+                onClick={() => setGroupMode("create")}
+                aria-pressed={groupMode === "create"}
                 className={`min-h-9 rounded-lg px-2 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
-                  categoryMode === "create"
+                  groupMode === "create"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted hover:text-foreground"
                 }`}
               >
-                新建分类
+                新建{options.groupLabel}
               </button>
             </div>
 
-            {categoryMode === "existing" ? (
+            {groupMode === "existing" ? (
               <div>
                 <select
                   name="groupId"
                   defaultValue={draft?.group_id ?? ""}
-                  aria-label="选择已有分类"
+                  aria-label={`选择已有${options.groupLabel}`}
                   aria-invalid={Boolean(feedbackState.fieldErrors?.groupId)}
                   aria-describedby={
                     feedbackState.fieldErrors?.groupId
@@ -249,40 +259,44 @@ export function DraftEditor({ draft, groups }: DraftEditorProps) {
             ) : (
               <div className="mt-3 space-y-3">
                 <label className="block">
-                  <span className="text-xs text-muted">分类名称</span>
+                  <span className="text-xs text-muted">
+                    {options.groupLabel}名称
+                  </span>
                   <input
-                    name="categoryName"
-                    placeholder="例如：开发手记"
+                    name="groupName"
+                    placeholder={kind === "regular" ? "例如：开发手记" : "例如：所思所想"}
                     aria-invalid={Boolean(
-                      feedbackState.fieldErrors?.categoryName,
+                      feedbackState.fieldErrors?.groupName,
                     )}
                     aria-describedby={
-                      feedbackState.fieldErrors?.categoryName
-                        ? "categoryName-error"
+                      feedbackState.fieldErrors?.groupName
+                        ? "groupName-error"
                         : undefined
                     }
                     className="mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none placeholder:text-muted/65 focus:border-accent"
                   />
-                  <FieldError field="categoryName" state={feedbackState} />
+                  <FieldError field="groupName" state={feedbackState} />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-muted">分类 Slug</span>
+                  <span className="text-xs text-muted">
+                    {options.groupLabel} Slug
+                  </span>
                   <input
-                    name="categorySlug"
+                    name="groupSlug"
                     placeholder="development-notes"
                     autoCapitalize="none"
                     spellCheck={false}
                     aria-invalid={Boolean(
-                      feedbackState.fieldErrors?.categorySlug,
+                      feedbackState.fieldErrors?.groupSlug,
                     )}
                     aria-describedby={
-                      feedbackState.fieldErrors?.categorySlug
-                        ? "categorySlug-error"
+                      feedbackState.fieldErrors?.groupSlug
+                        ? "groupSlug-error"
                         : undefined
                     }
                     className="mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-sm outline-none placeholder:text-muted/65 focus:border-accent"
                   />
-                  <FieldError field="categorySlug" state={feedbackState} />
+                  <FieldError field="groupSlug" state={feedbackState} />
                 </label>
               </div>
             )}
@@ -331,7 +345,7 @@ export function DraftEditor({ draft, groups }: DraftEditorProps) {
           }`}
         >
           {feedbackState.message ??
-            "标题、Slug、分类、摘要和正文都可以稍后补全。"}
+            `标题、Slug、${options.groupLabel}、摘要和正文都可以稍后补全。`}
           {publishState.publishedPath ? (
             <>
               {" "}

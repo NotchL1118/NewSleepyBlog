@@ -136,6 +136,43 @@ export type Database = {
         }
       }
       is_admin: { Args: never; Returns: boolean }
+      prevent_post_kind_change: { Args: never; Returns: unknown }
+      publish_post: {
+        Args: {
+          p_body_markdown: string
+          p_expected_kind: string
+          p_expected_updated_at: string
+          p_group_id: number | null
+          p_new_group_name: string | null
+          p_new_group_slug: string | null
+          p_post_id: number
+          p_slug: string
+          p_summary: string | null
+          p_title: string
+        }
+        Returns: {
+          archive_note: string | null
+          archived_at: string | null
+          body_markdown: string
+          comments_enabled: boolean
+          created_at: string
+          group_id: number | null
+          id: number
+          kind: string
+          published_at: string | null
+          slug: string | null
+          status: string
+          summary: string | null
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       publish_regular_post: {
         Args: {
           p_body_markdown: string
