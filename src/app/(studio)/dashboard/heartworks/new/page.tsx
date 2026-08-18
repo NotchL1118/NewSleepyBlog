@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { DraftEditor } from "@/features/posts/DraftEditor";
-import { getPostGroups, getTags } from "@/features/posts/drafts";
+import { PostEditor } from "@/features/posts/PostEditor";
+import { getPostGroups, getTags } from "@/features/posts/studio-post-editor";
 
 export const metadata: Metadata = { title: "新建心作" };
 
@@ -10,6 +10,6 @@ export default async function Page() {
     getTags(),
   ]);
   return (
-    <DraftEditor draft={null} groups={groups} kind="heartwork" tags={tags} />
+    <PostEditor post={null} groups={groups} kind="heartwork" tags={tags} />
   );
 }

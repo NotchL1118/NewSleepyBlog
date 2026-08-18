@@ -233,6 +233,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_post: {
+        Args: {
+          p_expected_kind: string
+          p_expected_updated_at: string
+          p_post_id: number
+        }
+        Returns: {
+          archive_note: string | null
+          archived_at: string | null
+          body_markdown: string
+          comments_enabled: boolean
+          created_at: string
+          group_id: number | null
+          id: number
+          kind: string
+          published_at: string | null
+          slug: string | null
+          status: string
+          summary: string | null
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       is_admin: { Args: never; Returns: boolean }
       publish_post:
         | {
@@ -321,6 +350,37 @@ export type Database = {
           p_slug: string
           p_summary: string
           p_title: string
+        }
+        Returns: {
+          archive_note: string | null
+          archived_at: string | null
+          body_markdown: string
+          comments_enabled: boolean
+          created_at: string
+          group_id: number | null
+          id: number
+          kind: string
+          published_at: string | null
+          slug: string | null
+          status: string
+          summary: string | null
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      transition_post: {
+        Args: {
+          p_archive_note?: string
+          p_expected_kind: string
+          p_expected_updated_at: string
+          p_post_id: number
+          p_transition: string
         }
         Returns: {
           archive_note: string | null

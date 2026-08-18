@@ -32,6 +32,13 @@ export type DraftActionState = {
   saved?: boolean;
 };
 
+export type LifecycleActionState = {
+  message: string | null;
+  tone: "error" | "success" | "warning" | null;
+};
+
+export type PostTransition = "archive" | "restore" | "withdraw";
+
 type DraftValues = {
   groupId: number | null;
   title: string | null;
@@ -50,6 +57,8 @@ type UpdateDraftArgs =
   Database["public"]["Functions"]["update_post_draft"]["Args"];
 type PublishPostArgs =
   Database["public"]["Functions"]["publish_post"]["Args"];
+type TransitionPostArgs =
+  Database["public"]["Functions"]["transition_post"]["Args"];
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -145,6 +154,12 @@ function readDraftValues(
 
 function isActionState(value: object | DraftActionState): value is DraftActionState {
   return "message" in value;
+}
+
+function isPostTransition(value: string): value is PostTransition {
+  return (["archive", "restore", "withdraw"] as const).some(
+    (transition) => transition === value,
+  );
 }
 
 function addOptionalValues<
@@ -271,6 +286,16 @@ function publicationErrorState(
     tone: "error",
     updatedAt,
   };
+}
+
+function invalidatePublicPostCaches(slug: string | null) {
+  const tags = slug
+    ? [POST_LIST_CACHE_TAG, postDetailCacheTag(slug)]
+    : [POST_LIST_CACHE_TAG];
+
+  for (const tag of tags) {
+    updateTag(tag);
+  }
 }
 
 export async function createPostDraft(
@@ -473,29 +498,10 @@ export async function publishPost(
     return publicationErrorState(error, updatedAt, kind);
   }
 
-  let cacheRefreshFailed = false;
-  for (const tag of [
-    POST_LIST_CACHE_TAG,
-    postDetailCacheTag(data.slug),
-  ]) {
-    try {
-      updateTag(tag);
-    } catch {
-      cacheRefreshFailed = true;
-    }
-  }
+  invalidatePublicPostCaches(data.slug);
+  refresh();
 
   const publishedPath = `${options.publicBasePath}/${data.slug}`;
-  if (cacheRefreshFailed) {
-    return {
-      message: "文章已保存并发布，但缓存刷新失败；公开页面可能会短暂显示旧内容。",
-      tone: "warning",
-      updatedAt: data.updated_at,
-      publishedPath,
-      saved: true,
-    };
-  }
-
   return {
     message: "文章已发布，公开页面现在可以访问。",
     tone: "success",
@@ -503,4 +509,92 @@ export async function publishPost(
     publishedPath,
     saved: true,
   };
+}
+
+export async function transitionPost(
+  kind: PostKind,
+  postId: number,
+  _previousState: LifecycleActionState,
+  formData: FormData,
+): Promise<LifecycleActionState> {
+  await requireAdmin();
+
+  if (!isPostKind(kind) || !Number.isSafeInteger(postId) || postId <= 0) {
+    return { message: "文章标识无效。", tone: "error" };
+  }
+
+  const transition = readString(formData, "transition");
+  if (!isPostTransition(transition)) {
+    return { message: "文章状态操作无效。", tone: "error" };
+  }
+
+  const expectedUpdatedAt = readString(formData, "expectedUpdatedAt");
+  if (!expectedUpdatedAt) {
+    return { message: "缺少文章版本信息，请重新加载后再操作。", tone: "error" };
+  }
+
+  const args: TransitionPostArgs = {
+    p_post_id: postId,
+    p_expected_kind: kind,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_transition: transition,
+  };
+  const archiveNote = optionalText(readString(formData, "archiveNote"));
+  if (archiveNote !== null) args.p_archive_note = archiveNote;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("transition_post", args);
+
+  if (error || !data) {
+    if (error?.code === "40001") {
+      return {
+        message: "这篇文章已在别处更新。请重新加载后再操作。",
+        tone: "error",
+      };
+    }
+
+    return { message: "文章状态暂时无法更新，请稍后重试。", tone: "error" };
+  }
+
+  invalidatePublicPostCaches(data.slug);
+  refresh();
+
+  const messages = {
+    archive: "文章已归档，原公开地址仍可阅读。",
+    restore: "文章已恢复发布。",
+    withdraw: "文章已撤回为草稿，读者现在无法访问。",
+  } as const satisfies Record<PostTransition, string>;
+
+  return { message: messages[transition], tone: "success" };
+}
+
+export async function deletePost(
+  kind: PostKind,
+  postId: number,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  if (!isPostKind(kind) || !Number.isSafeInteger(postId) || postId <= 0) {
+    throw new Error("Invalid Post identifier.");
+  }
+
+  const expectedUpdatedAt = readString(formData, "expectedUpdatedAt");
+  if (!expectedUpdatedAt) {
+    throw new Error("Missing expected Post version.");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("delete_post", {
+    p_post_id: postId,
+    p_expected_kind: kind,
+    p_expected_updated_at: expectedUpdatedAt,
+  });
+
+  if (error || !data) {
+    throw new Error("Unable to hard-delete the Post.", { cause: error });
+  }
+
+  invalidatePublicPostCaches(data.slug);
+  redirect(postKindOptions[kind].studioBasePath);
 }

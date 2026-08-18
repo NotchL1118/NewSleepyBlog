@@ -4,17 +4,21 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import {
   createPostDraft,
+  deletePost,
   publishPost,
+  transitionPost,
   updatePostDraft,
   type DraftActionState,
   type DraftField,
+  type LifecycleActionState,
 } from "./draft-actions";
-import type { PostDraft, PostGroupOption, TagOption } from "./drafts";
+import type { PostGroupOption, StudioPost, TagOption } from "./studio-post-editor";
 import { postKindOptions } from "./post-kinds";
+import type { PostStatus as StudioPostStatus } from "./studio-post-filters";
 import type { PostKind } from "./types";
 
-type DraftEditorProps = {
-  draft: PostDraft | null;
+type PostEditorProps = {
+  post: StudioPost | null;
   groups: PostGroupOption[];
   kind: PostKind;
   tags: TagOption[];
@@ -25,6 +29,44 @@ const emptyDraftActionState: DraftActionState = {
   tone: null,
   updatedAt: null,
 };
+
+const emptyLifecycleActionState: LifecycleActionState = {
+  message: null,
+  tone: null,
+};
+
+const editorStatusLabels = {
+  draft: "草稿",
+  published: "已发布",
+  archived: "已归档",
+} as const satisfies Record<StudioPostStatus, string>;
+
+const lifecycleTransitions = {
+  draft: [],
+  published: [
+    { label: "撤回为草稿", primary: false, value: "withdraw" },
+    { label: "归档", primary: true, value: "archive" },
+  ],
+  archived: [
+    { label: "撤回为草稿", primary: false, value: "withdraw" },
+    { label: "恢复发布", primary: true, value: "restore" },
+  ],
+} as const satisfies Record<
+  StudioPostStatus,
+  ReadonlyArray<{
+    label: string;
+    primary: boolean;
+    value: "archive" | "restore" | "withdraw";
+  }>
+>;
+
+function latestUpdatedAt(...values: Array<string | null | undefined>) {
+  return values.reduce<string>((latest, value) => {
+    if (!value) return latest;
+    if (!latest) return value;
+    return Date.parse(value) > Date.parse(latest) ? value : latest;
+  }, "");
+}
 
 function EditorActions({
   canPublish,
@@ -68,6 +110,76 @@ function EditorActions({
               : "发布"}
         </button>
       ) : null}
+    </div>
+  );
+}
+
+function LifecycleControls({
+  deleteAction,
+  lifecycleAction,
+  onAction,
+  pending,
+  status,
+}: {
+  deleteAction: (formData: FormData) => void | Promise<void>;
+  lifecycleAction: (formData: FormData) => void;
+  onAction: () => void;
+  pending: boolean;
+  status: StudioPostStatus;
+}) {
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const secondaryButtonClassName =
+    "inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-medium transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-55";
+  const primaryButtonClassName =
+    "inline-flex min-h-11 items-center justify-center rounded-xl bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-55";
+
+  return (
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+      {lifecycleTransitions[status].map((transition) => (
+        <button
+          key={transition.value}
+          type="submit"
+          name="transition"
+          value={transition.value}
+          formAction={lifecycleAction}
+          onClick={onAction}
+          disabled={pending}
+          className={
+            transition.primary
+              ? primaryButtonClassName
+              : secondaryButtonClassName
+          }
+        >
+          {pending && transition.primary ? "正在更新…" : transition.label}
+        </button>
+      ))}
+
+      {deleteArmed ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setDeleteArmed(false)}
+            className={secondaryButtonClassName}
+          >
+            取消删除
+          </button>
+          <button
+            type="submit"
+            formAction={deleteAction}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-foreground bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            再次确认永久删除
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setDeleteArmed(true)}
+          className={secondaryButtonClassName}
+        >
+          永久删除
+        </button>
+      )}
     </div>
   );
 }
@@ -126,29 +238,40 @@ function NewTagFields({ state }: { state: DraftActionState }) {
   );
 }
 
-export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
+export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
   const options = postKindOptions[kind];
+  const status = (post?.status ?? "draft") as StudioPostStatus;
+  const editable = post === null || status === "draft";
   const [groupMode, setGroupMode] = useState<"create" | "existing">(
     "existing",
   );
-  const [feedbackMode, setFeedbackMode] = useState<"publish" | "save">(
+  const [feedbackMode, setFeedbackMode] = useState<
+    "lifecycle" | "publish" | "save"
+  >(
     "save",
   );
-  const initialState: DraftActionState = draft
+  const initialState: DraftActionState = post
     ? {
         ...emptyDraftActionState,
-        updatedAt: draft.updated_at,
+        updatedAt: post.updated_at,
       }
     : emptyDraftActionState;
-  const action = draft
-    ? updatePostDraft.bind(null, kind, draft.id)
+  const action = post
+    ? updatePostDraft.bind(null, kind, post.id)
     : createPostDraft.bind(null, kind);
   const [state, formAction, pending] = useActionState(action, initialState);
   const [publishState, publishAction, publishPending] = useActionState(
-    publishPost.bind(null, kind, draft?.id ?? 0),
+    publishPost.bind(null, kind, post?.id ?? 0),
     initialState,
   );
+  const [lifecycleState, lifecycleAction, lifecyclePending] = useActionState(
+    transitionPost.bind(null, kind, post?.id ?? 0),
+    emptyLifecycleActionState,
+  );
+  const deleteAction = deletePost.bind(null, kind, post?.id ?? 0);
   const feedbackState = feedbackMode === "publish" ? publishState : state;
+  const feedback =
+    feedbackMode === "lifecycle" ? lifecycleState : feedbackState;
   const published = publishState.saved === true;
 
   return (
@@ -156,7 +279,11 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
       <input
         type="hidden"
         name="expectedUpdatedAt"
-        value={state.updatedAt ?? ""}
+        value={latestUpdatedAt(
+          post?.updated_at,
+          state.updatedAt,
+          publishState.updatedAt,
+        )}
       />
       <input type="hidden" name="groupMode" value={groupMode} />
 
@@ -169,28 +296,32 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
             ← 返回{options.pluralLabel}
           </Link>
           <p className="mt-6 text-xs font-semibold tracking-[0.12em] text-accent uppercase">
-            {options.singularLabel} · 草稿
+            {options.singularLabel} · {editorStatusLabels[status]}
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-            {draft
-              ? draft.title?.trim() || "无标题草稿"
+            {post
+              ? post.title?.trim() || "无标题草稿"
               : `新建${options.singularLabel}`}
           </h1>
           <p className="mt-3 text-sm leading-7 text-muted">
-            {draft
-              ? `草稿 #${draft.id} · 保存时会检查是否存在更新冲突。`
+            {post
+              ? status === "draft"
+                ? `草稿 #${post.id} · 保存时会检查是否存在更新冲突。`
+                : `文章 #${post.id} · 先撤回为草稿，再编辑内容。`
               : "离开此页不会产生记录；第一次保存后才会创建草稿。"}
           </p>
         </div>
-        <EditorActions
-          canPublish={draft !== null}
-          published={published}
-          publishAction={publishAction}
-          onPublish={() => setFeedbackMode("publish")}
-          onSave={() => setFeedbackMode("save")}
-          publishPending={publishPending}
-          savePending={pending}
-        />
+        {editable ? (
+          <EditorActions
+            canPublish={post !== null}
+            published={published}
+            publishAction={publishAction}
+            onPublish={() => setFeedbackMode("publish")}
+            onSave={() => setFeedbackMode("save")}
+            publishPending={publishPending}
+            savePending={pending}
+          />
+        ) : null}
       </header>
 
       <div className="mt-8 grid gap-7 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
@@ -199,7 +330,8 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
             <span className="text-sm font-medium">标题</span>
             <input
               name="title"
-              defaultValue={draft?.title ?? ""}
+              defaultValue={post?.title ?? ""}
+              readOnly={!editable}
               placeholder="可以稍后填写"
               aria-invalid={Boolean(feedbackState.fieldErrors?.title)}
               aria-describedby={
@@ -214,7 +346,8 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
             <span className="text-sm font-medium">Markdown 正文</span>
             <textarea
               name="bodyMarkdown"
-              defaultValue={draft?.body_markdown ?? ""}
+              defaultValue={post?.body_markdown ?? ""}
+              readOnly={!editable}
               rows={20}
               placeholder="从这里开始写，空正文也可以保存为草稿。"
               aria-invalid={Boolean(
@@ -232,6 +365,25 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
         </div>
 
         <aside className="space-y-5 rounded-2xl border border-border bg-surface/55 p-5">
+          {status === "published" ? (
+            <label className="block">
+              <span className="text-sm font-medium">归档说明（可选）</span>
+              <textarea
+                name="archiveNote"
+                rows={4}
+                placeholder="向读者说明内容为何归档；仅保存纯文本。"
+                className="mt-2 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 outline-none transition-colors placeholder:text-muted/65 focus:border-accent"
+              />
+            </label>
+          ) : null}
+          {status === "archived" ? (
+            <div>
+              <p className="text-sm font-medium">归档说明</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted">
+                {post?.archive_note ?? "未填写归档说明。"}
+              </p>
+            </div>
+          ) : null}
           <div>
             <p className="text-xs font-semibold tracking-[0.1em] text-muted uppercase">
               文章种类
@@ -242,7 +394,7 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
             <p className="mt-1 text-xs leading-5 text-muted">创建后不可更改</p>
           </div>
 
-          <fieldset className="border-t border-border pt-5">
+          <fieldset disabled={!editable} className="border-t border-border pt-5 disabled:opacity-70">
             <legend className="text-sm font-medium">
               {options.groupLabel}
             </legend>
@@ -277,7 +429,7 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
               <div>
                 <select
                   name="groupId"
-                  defaultValue={draft?.group_id ?? ""}
+                  defaultValue={post?.group_id ?? ""}
                   aria-label={`选择已有${options.groupLabel}`}
                   aria-invalid={Boolean(feedbackState.fieldErrors?.groupId)}
                   aria-describedby={
@@ -342,7 +494,7 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
             )}
           </fieldset>
 
-          <fieldset className="border-t border-border pt-5">
+          <fieldset disabled={!editable} className="border-t border-border pt-5 disabled:opacity-70">
             <legend className="text-sm font-medium">标签</legend>
             <p className="mt-1 text-xs leading-5 text-muted">
               可跨普通文章与心作复用，也可以不选。
@@ -358,7 +510,7 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
                       type="checkbox"
                       name="tagId"
                       value={tag.id}
-                      defaultChecked={draft?.tagIds.includes(tag.id)}
+                      defaultChecked={post?.tagIds.includes(tag.id)}
                       className="size-4 accent-accent"
                     />
                     <span className="min-w-0">
@@ -385,7 +537,8 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
             <span className="text-sm font-medium">Slug</span>
             <input
               name="slug"
-              defaultValue={draft?.slug ?? ""}
+              defaultValue={post?.slug ?? ""}
+              readOnly={!editable || Boolean(post?.published_at)}
               placeholder="lowercase-kebab-case"
               autoCapitalize="none"
               spellCheck={false}
@@ -402,7 +555,8 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
             <span className="text-sm font-medium">摘要</span>
             <textarea
               name="summary"
-              defaultValue={draft?.summary ?? ""}
+              defaultValue={post?.summary ?? ""}
+              readOnly={!editable}
               rows={5}
               placeholder="可选，发布前再补也可以"
               className="mt-2 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 outline-none transition-colors placeholder:text-muted/65 focus:border-accent"
@@ -415,16 +569,18 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
         <p
           aria-live="polite"
           className={`text-sm leading-6 ${
-            feedbackState.tone === "error" ||
-            feedbackState.tone === "warning"
+            feedback.tone === "error" ||
+            feedback.tone === "warning"
               ? "text-foreground"
-              : feedbackState.tone === "success"
+              : feedback.tone === "success"
                 ? "text-accent"
                 : "text-muted"
           }`}
         >
-          {feedbackState.message ??
-            `标题、Slug、${options.groupLabel}、标签、摘要和正文都可以稍后补全。`}
+          {feedback.message ??
+            (editable
+              ? `标题、Slug、${options.groupLabel}、标签、摘要和正文都可以稍后补全。`
+              : "状态操作会立即同步到公开页面。")}
           {publishState.publishedPath ? (
             <>
               {" "}
@@ -437,15 +593,28 @@ export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
             </>
           ) : null}
         </p>
-        <EditorActions
-          canPublish={draft !== null}
-          published={published}
-          publishAction={publishAction}
-          onPublish={() => setFeedbackMode("publish")}
-          onSave={() => setFeedbackMode("save")}
-          publishPending={publishPending}
-          savePending={pending}
-        />
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+          {editable ? (
+            <EditorActions
+              canPublish={post !== null}
+              published={published}
+              publishAction={publishAction}
+              onPublish={() => setFeedbackMode("publish")}
+              onSave={() => setFeedbackMode("save")}
+              publishPending={publishPending}
+              savePending={pending}
+            />
+          ) : null}
+          {post ? (
+            <LifecycleControls
+              deleteAction={deleteAction}
+              lifecycleAction={lifecycleAction}
+              onAction={() => setFeedbackMode("lifecycle")}
+              pending={lifecyclePending}
+              status={status}
+            />
+          ) : null}
+        </div>
       </div>
     </form>
   );

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DraftEditor } from "@/features/posts/DraftEditor";
-import { getPostDraft, getPostGroups, getTags } from "@/features/posts/drafts";
+import { PostEditor } from "@/features/posts/PostEditor";
+import { getPostGroups, getStudioPost, getTags } from "@/features/posts/studio-post-editor";
 
-export const metadata: Metadata = { title: "编辑心作草稿" };
+export const metadata: Metadata = { title: "管理心作" };
 
 export default async function Page({
   params,
@@ -15,15 +15,15 @@ export default async function Page({
 
   if (!Number.isSafeInteger(id) || id <= 0) notFound();
 
-  const [draft, groups, tags] = await Promise.all([
-    getPostDraft(id, "heartwork"),
+  const [post, groups, tags] = await Promise.all([
+    getStudioPost(id, "heartwork"),
     getPostGroups("heartwork"),
     getTags(),
   ]);
 
-  if (!draft) notFound();
+  if (!post) notFound();
 
   return (
-    <DraftEditor draft={draft} groups={groups} kind="heartwork" tags={tags} />
+    <PostEditor post={post} groups={groups} kind="heartwork" tags={tags} />
   );
 }
