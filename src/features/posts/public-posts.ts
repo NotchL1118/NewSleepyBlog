@@ -31,6 +31,7 @@ type PublicPostRow = {
   updated_at: string;
   archive_note: string | null;
   post_groups: { name: string; slug: string };
+  post_tags?: { tags: { name: string; slug: string } }[];
 };
 
 type AdjacentPostRow = Pick<
@@ -103,7 +104,7 @@ export async function getPublicPostPage(
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, kind, status, slug, title, summary, body_markdown, published_at, updated_at, archive_note, post_groups!inner(name, slug)",
+      "id, kind, status, slug, title, summary, body_markdown, published_at, updated_at, archive_note, post_groups!inner(name, slug), post_tags(tags(name, slug))",
     )
     .eq("slug", slug)
     .eq("kind", kind)
@@ -128,7 +129,9 @@ export async function getPublicPostPage(
     summary: row.summary ?? undefined,
     bodyMarkdown: row.body_markdown,
     group: row.post_groups,
-    tags: [],
+    tags: (row.post_tags ?? [])
+      .map((postTag) => postTag.tags.name)
+      .sort((left, right) => left.localeCompare(right, "zh-CN")),
     publishedAt: row.published_at!,
     updatedAt: row.updated_at,
     archiveNote: row.archive_note ?? undefined,

@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       post_groups: {
@@ -38,6 +63,36 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      post_tags: {
+        Row: {
+          post_id: number
+          tag_id: number
+        }
+        Insert: {
+          post_id: number
+          tag_id: number
+        }
+        Update: {
+          post_id?: number
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_tags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posts: {
         Row: {
@@ -98,6 +153,30 @@ export type Database = {
           },
         ]
       }
+      tags: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -108,8 +187,11 @@ export type Database = {
           p_body_markdown?: string
           p_group_id?: number
           p_kind: string
+          p_new_tag_name?: string
+          p_new_tag_slug?: string
           p_slug?: string
           p_summary?: string
+          p_tag_ids?: number[]
           p_title?: string
         }
         Returns: {
@@ -135,54 +217,109 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      is_admin: { Args: never; Returns: boolean }
-      prevent_post_kind_change: { Args: never; Returns: unknown }
-      publish_post: {
-        Args: {
-          p_body_markdown: string
-          p_expected_kind: string
-          p_expected_updated_at: string
-          p_group_id: number | null
-          p_new_group_name: string | null
-          p_new_group_slug: string | null
-          p_post_id: number
-          p_slug: string
-          p_summary: string | null
-          p_title: string
-        }
+      create_tag: {
+        Args: { p_name: string; p_slug: string }
         Returns: {
-          archive_note: string | null
-          archived_at: string | null
-          body_markdown: string
-          comments_enabled: boolean
           created_at: string
-          group_id: number | null
           id: number
-          kind: string
-          published_at: string | null
-          slug: string | null
-          status: string
-          summary: string | null
-          title: string | null
+          name: string
+          slug: string
           updated_at: string
         }
         SetofOptions: {
           from: "*"
-          to: "posts"
+          to: "tags"
           isOneToOne: true
           isSetofReturn: false
         }
       }
+      is_admin: { Args: never; Returns: boolean }
+      publish_post:
+        | {
+            Args: {
+              p_body_markdown: string
+              p_expected_kind: string
+              p_expected_updated_at: string
+              p_group_id: number
+              p_new_group_name: string
+              p_new_group_slug: string
+              p_post_id: number
+              p_slug: string
+              p_summary: string
+              p_title: string
+            }
+            Returns: {
+              archive_note: string | null
+              archived_at: string | null
+              body_markdown: string
+              comments_enabled: boolean
+              created_at: string
+              group_id: number | null
+              id: number
+              kind: string
+              published_at: string | null
+              slug: string | null
+              status: string
+              summary: string | null
+              title: string | null
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "posts"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_body_markdown: string
+              p_expected_kind: string
+              p_expected_updated_at: string
+              p_group_id: number | null
+              p_new_group_name: string | null
+              p_new_group_slug: string | null
+              p_new_tag_name: string | null
+              p_new_tag_slug: string | null
+              p_post_id: number
+              p_slug: string
+              p_summary: string | null
+              p_tag_ids: number[]
+              p_title: string
+            }
+            Returns: {
+              archive_note: string | null
+              archived_at: string | null
+              body_markdown: string
+              comments_enabled: boolean
+              created_at: string
+              group_id: number | null
+              id: number
+              kind: string
+              published_at: string | null
+              slug: string | null
+              status: string
+              summary: string | null
+              title: string | null
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "posts"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       publish_regular_post: {
         Args: {
           p_body_markdown: string
           p_expected_updated_at: string
-          p_group_id: number | null
-          p_new_group_name: string | null
-          p_new_group_slug: string | null
+          p_group_id: number
+          p_new_group_name: string
+          p_new_group_slug: string
           p_post_id: number
           p_slug: string
-          p_summary: string | null
+          p_summary: string
           p_title: string
         }
         Returns: {
@@ -213,9 +350,12 @@ export type Database = {
           p_body_markdown?: string
           p_expected_updated_at: string
           p_group_id?: number
+          p_new_tag_name?: string
+          p_new_tag_slug?: string
           p_post_id: number
           p_slug?: string
           p_summary?: string
+          p_tag_ids?: number[]
           p_title?: string
         }
         Returns: {
@@ -369,6 +509,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

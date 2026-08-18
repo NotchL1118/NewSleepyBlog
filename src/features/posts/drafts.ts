@@ -16,16 +16,21 @@ export type PostDraft = Pick<
   | "body_markdown"
   | "status"
   | "updated_at"
->;
+> & { tagIds: number[] };
 
 export type PostGroupOption = Pick<Tables<"post_groups">, "id" | "name">;
+export type TagOption = Pick<Tables<"tags">, "id" | "name" | "slug">;
+
+type PostDraftRow = Omit<PostDraft, "tagIds"> & {
+  post_tags: { tag_id: number }[];
+};
 
 export async function getPostDraft(id: number, kind: PostKind) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, kind, group_id, title, slug, summary, body_markdown, status, updated_at",
+      "id, kind, group_id, title, slug, summary, body_markdown, status, updated_at, post_tags(tag_id)",
     )
     .eq("id", id)
     .eq("kind", kind)
@@ -36,7 +41,13 @@ export async function getPostDraft(id: number, kind: PostKind) {
     throw new Error("Unable to load the Draft Post.", { cause: error });
   }
 
-  return data satisfies PostDraft | null;
+  if (!data) return null;
+
+  const { post_tags: postTags, ...draft } = data as PostDraftRow;
+  return {
+    ...draft,
+    tagIds: postTags.map((postTag) => postTag.tag_id),
+  } satisfies PostDraft;
 }
 
 export async function getPostGroups(kind: PostKind) {
@@ -51,4 +62,18 @@ export async function getPostGroups(kind: PostKind) {
   }
 
   return data satisfies PostGroupOption[];
+}
+
+export async function getTags() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tags")
+    .select("id, name, slug")
+    .order("name");
+
+  if (error) {
+    throw new Error("Unable to load Tags.", { cause: error });
+  }
+
+  return data satisfies TagOption[];
 }

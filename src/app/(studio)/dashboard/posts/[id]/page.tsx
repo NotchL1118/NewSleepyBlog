@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DraftEditor } from "@/features/posts/DraftEditor";
-import { getPostDraft, getPostGroups } from "@/features/posts/drafts";
+import { getPostDraft, getPostGroups, getTags } from "@/features/posts/drafts";
 
 export const metadata: Metadata = { title: "编辑普通文章草稿" };
 
@@ -15,12 +15,15 @@ export default async function Page({
 
   if (!Number.isSafeInteger(id) || id <= 0) notFound();
 
-  const [draft, groups] = await Promise.all([
+  const [draft, groups, tags] = await Promise.all([
     getPostDraft(id, "regular"),
     getPostGroups("regular"),
+    getTags(),
   ]);
 
   if (!draft) notFound();
 
-  return <DraftEditor draft={draft} groups={groups} kind="regular" />;
+  return (
+    <DraftEditor draft={draft} groups={groups} kind="regular" tags={tags} />
+  );
 }

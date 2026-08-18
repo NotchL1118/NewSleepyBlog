@@ -9,7 +9,7 @@ import {
   type DraftActionState,
   type DraftField,
 } from "./draft-actions";
-import type { PostDraft, PostGroupOption } from "./drafts";
+import type { PostDraft, PostGroupOption, TagOption } from "./drafts";
 import { postKindOptions } from "./post-kinds";
 import type { PostKind } from "./types";
 
@@ -17,6 +17,7 @@ type DraftEditorProps = {
   draft: PostDraft | null;
   groups: PostGroupOption[];
   kind: PostKind;
+  tags: TagOption[];
 };
 
 const emptyDraftActionState: DraftActionState = {
@@ -86,7 +87,46 @@ function FieldError({
   ) : null;
 }
 
-export function DraftEditor({ draft, groups, kind }: DraftEditorProps) {
+function NewTagFields({ state }: { state: DraftActionState }) {
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+
+  return (
+    <div className="mt-4 space-y-3 border-t border-border pt-4">
+      <p className="text-xs font-medium text-muted">同时新建一个标签（可选）</p>
+      <label className="block">
+        <span className="text-xs text-muted">标签名称</span>
+        <input
+          name="tagName"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="例如：系统设计"
+          aria-invalid={Boolean(state.fieldErrors?.tagName)}
+          aria-describedby={state.fieldErrors?.tagName ? "tagName-error" : undefined}
+          className="mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none placeholder:text-muted/65 focus:border-accent"
+        />
+        <FieldError field="tagName" state={state} />
+      </label>
+      <label className="block">
+        <span className="text-xs text-muted">标签 Slug</span>
+        <input
+          name="tagSlug"
+          value={slug}
+          onChange={(event) => setSlug(event.target.value)}
+          placeholder="system-design"
+          autoCapitalize="none"
+          spellCheck={false}
+          aria-invalid={Boolean(state.fieldErrors?.tagSlug)}
+          aria-describedby={state.fieldErrors?.tagSlug ? "tagSlug-error" : undefined}
+          className="mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-sm outline-none placeholder:text-muted/65 focus:border-accent"
+        />
+        <FieldError field="tagSlug" state={state} />
+      </label>
+    </div>
+  );
+}
+
+export function DraftEditor({ draft, groups, kind, tags }: DraftEditorProps) {
   const options = postKindOptions[kind];
   const [groupMode, setGroupMode] = useState<"create" | "existing">(
     "existing",
@@ -302,6 +342,45 @@ export function DraftEditor({ draft, groups, kind }: DraftEditorProps) {
             )}
           </fieldset>
 
+          <fieldset className="border-t border-border pt-5">
+            <legend className="text-sm font-medium">标签</legend>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              可跨普通文章与心作复用，也可以不选。
+            </p>
+            {tags.length > 0 ? (
+              <div className="mt-3 max-h-44 space-y-1 overflow-y-auto rounded-xl border border-border bg-background p-2">
+                {tags.map((tag) => (
+                  <label
+                    key={tag.id}
+                    className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg px-2 text-sm transition-colors hover:bg-surface"
+                  >
+                    <input
+                      type="checkbox"
+                      name="tagId"
+                      value={tag.id}
+                      defaultChecked={draft?.tagIds.includes(tag.id)}
+                      className="size-4 accent-accent"
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate">{tag.name}</span>
+                      <span className="block truncate font-mono text-[11px] text-muted">
+                        {tag.slug}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-xs leading-5 text-muted">还没有标签。</p>
+            )}
+            <FieldError field="tagIds" state={feedbackState} />
+
+            <NewTagFields
+              key={state.updatedAt ?? "unsaved"}
+              state={feedbackState}
+            />
+          </fieldset>
+
           <label className="block">
             <span className="text-sm font-medium">Slug</span>
             <input
@@ -345,7 +424,7 @@ export function DraftEditor({ draft, groups, kind }: DraftEditorProps) {
           }`}
         >
           {feedbackState.message ??
-            `标题、Slug、${options.groupLabel}、摘要和正文都可以稍后补全。`}
+            `标题、Slug、${options.groupLabel}、标签、摘要和正文都可以稍后补全。`}
           {publishState.publishedPath ? (
             <>
               {" "}
