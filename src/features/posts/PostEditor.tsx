@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   createPostDraft,
   deletePost,
@@ -12,10 +12,12 @@ import {
   type DraftField,
   type LifecycleActionState,
 } from "./draft-actions";
+import { MarkdownEditorField } from "./MarkdownEditorField";
 import type { PostGroupOption, StudioPost, TagOption } from "./studio-post-editor";
 import { postKindOptions } from "./post-kinds";
 import type { PostStatus as StudioPostStatus } from "./studio-post-filters";
 import type { PostKind } from "./types";
+import { useUnsavedChanges } from "./useUnsavedChanges";
 
 type PostEditorProps = {
   post: StudioPost | null;
@@ -23,6 +25,8 @@ type PostEditorProps = {
   kind: PostKind;
   tags: TagOption[];
 };
+
+const summaryRecommendedLength = 160;
 
 const emptyDraftActionState: DraftActionState = {
   message: null,
@@ -242,9 +246,12 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
   const options = postKindOptions[kind];
   const status = (post?.status ?? "draft") as StudioPostStatus;
   const editable = post === null || status === "draft";
+  const formRef = useRef<HTMLFormElement>(null);
   const [groupMode, setGroupMode] = useState<"create" | "existing">(
     "existing",
   );
+  const [bodyMarkdown, setBodyMarkdown] = useState(post?.body_markdown ?? "");
+  const [summary, setSummary] = useState(post?.summary ?? "");
   const [feedbackMode, setFeedbackMode] = useState<
     "lifecycle" | "publish" | "save"
   >(
@@ -273,9 +280,36 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
   const feedback =
     feedbackMode === "lifecycle" ? lifecycleState : feedbackState;
   const published = publishState.saved === true;
+  const savedRevision = [
+    state.updatedAt ?? "",
+    publishState.updatedAt ?? "",
+    String(state.saved ?? false),
+    String(publishState.saved ?? false),
+  ].join(":");
+  const { markMaybeDirty } = useUnsavedChanges(
+    formRef,
+    savedRevision,
+    !pending && !publishPending,
+  );
+  const publishedPath =
+    publishState.publishedPath ??
+    (post?.slug && status !== "draft"
+      ? `${options.publicBasePath}/${post.slug}`
+      : undefined);
+  const summaryLength = Array.from(summary).length;
+
+  useEffect(() => {
+    markMaybeDirty();
+  }, [groupMode, markMaybeDirty]);
 
   return (
-    <form action={formAction} className="mx-auto w-full max-w-5xl">
+    <form
+      ref={formRef}
+      action={formAction}
+      onInput={markMaybeDirty}
+      onChange={markMaybeDirty}
+      className="mx-auto w-full min-w-0"
+    >
       <input
         type="hidden"
         name="expectedUpdatedAt"
@@ -324,8 +358,8 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
         ) : null}
       </header>
 
-      <div className="mt-8 grid gap-7 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
-        <div className="space-y-6">
+      <div className="mt-8 grid min-w-0 gap-7 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+        <div className="min-w-0 space-y-6">
           <label className="block">
             <span className="text-sm font-medium">标题</span>
             <input
@@ -342,26 +376,13 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
             <FieldError field="title" state={feedbackState} />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-medium">Markdown 正文</span>
-            <textarea
-              name="bodyMarkdown"
-              defaultValue={post?.body_markdown ?? ""}
-              readOnly={!editable}
-              rows={20}
-              placeholder="从这里开始写，空正文也可以保存为草稿。"
-              aria-invalid={Boolean(
-                feedbackState.fieldErrors?.bodyMarkdown,
-              )}
-              aria-describedby={
-                feedbackState.fieldErrors?.bodyMarkdown
-                  ? "bodyMarkdown-error"
-                  : undefined
-              }
-              className="mt-2 min-h-[28rem] w-full resize-y rounded-xl border border-border bg-background px-4 py-3 font-mono text-sm leading-7 outline-none transition-colors placeholder:font-sans placeholder:text-muted/65 focus:border-accent"
-            />
-            <FieldError field="bodyMarkdown" state={feedbackState} />
-          </label>
+          <MarkdownEditorField
+            kind={kind}
+            value={bodyMarkdown}
+            readOnly={!editable}
+            error={feedbackState.fieldErrors?.bodyMarkdown}
+            onChange={setBodyMarkdown}
+          />
         </div>
 
         <aside className="space-y-5 rounded-2xl border border-border bg-surface/55 p-5">
@@ -555,12 +576,17 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
             <span className="text-sm font-medium">摘要</span>
             <textarea
               name="summary"
-              defaultValue={post?.summary ?? ""}
+              value={summary}
               readOnly={!editable}
               rows={5}
+              onChange={(event) => setSummary(event.target.value)}
               placeholder="可选，发布前再补也可以"
+              aria-describedby="summary-recommendation"
               className="mt-2 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 outline-none transition-colors placeholder:text-muted/65 focus:border-accent"
             />
+            <p id="summary-recommendation" className="mt-1.5 text-xs leading-5 text-muted">
+              建议约 {summaryRecommendedLength} 个字符，当前 {summaryLength}。没有硬性上限。
+            </p>
           </label>
         </aside>
       </div>
@@ -581,11 +607,11 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
             (editable
               ? `标题、Slug、${options.groupLabel}、标签、摘要和正文都可以稍后补全。`
               : "状态操作会立即同步到公开页面。")}
-          {publishState.publishedPath ? (
+          {publishedPath ? (
             <>
               {" "}
               <Link
-                href={publishState.publishedPath}
+                href={publishedPath}
                 className="font-medium text-accent underline underline-offset-4"
               >
                 打开公开页面

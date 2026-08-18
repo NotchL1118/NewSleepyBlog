@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/features/auth/server";
 import { createClient } from "@/utils/supabase/server";
 import type { Database } from "@/types/database.generated";
+import { committedWriteFeedback } from "./cache-feedback";
 import {
   POST_LIST_CACHE_TAG,
   postDetailCacheTag,
@@ -289,12 +290,19 @@ function publicationErrorState(
 }
 
 function invalidatePublicPostCaches(slug: string | null) {
-  const tags = slug
-    ? [POST_LIST_CACHE_TAG, postDetailCacheTag(slug)]
-    : [POST_LIST_CACHE_TAG];
+  try {
+    const tags = slug
+      ? [POST_LIST_CACHE_TAG, postDetailCacheTag(slug)]
+      : [POST_LIST_CACHE_TAG];
 
-  for (const tag of tags) {
-    updateTag(tag);
+    for (const tag of tags) {
+      updateTag(tag);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Public Post cache invalidation failed.", { error, slug });
+    return false;
   }
 }
 
@@ -498,13 +506,15 @@ export async function publishPost(
     return publicationErrorState(error, updatedAt, kind);
   }
 
-  invalidatePublicPostCaches(data.slug);
+  const cacheUpdated = invalidatePublicPostCaches(data.slug);
   refresh();
 
   const publishedPath = `${options.publicBasePath}/${data.slug}`;
   return {
-    message: "文章已发布，公开页面现在可以访问。",
-    tone: "success",
+    ...committedWriteFeedback(
+      "文章已发布，公开页面现在可以访问。",
+      cacheUpdated,
+    ),
     updatedAt: data.updated_at,
     publishedPath,
     saved: true,
@@ -556,7 +566,7 @@ export async function transitionPost(
     return { message: "文章状态暂时无法更新，请稍后重试。", tone: "error" };
   }
 
-  invalidatePublicPostCaches(data.slug);
+  const cacheUpdated = invalidatePublicPostCaches(data.slug);
   refresh();
 
   const messages = {
@@ -565,7 +575,7 @@ export async function transitionPost(
     withdraw: "文章已撤回为草稿，读者现在无法访问。",
   } as const satisfies Record<PostTransition, string>;
 
-  return { message: messages[transition], tone: "success" };
+  return committedWriteFeedback(messages[transition], cacheUpdated);
 }
 
 export async function deletePost(

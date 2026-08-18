@@ -2,8 +2,13 @@ import { MarkdownAsync } from "react-markdown";
 import { cacheLife } from "next/cache";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
-import remarkGfm from "remark-gfm";
-import styles from "./index.module.css";
+import { markdownComponents } from "@/features/posts/markdown-elements";
+import {
+  markdownRemarkPlugins,
+  markdownRemarkRehypeOptions,
+  markdownUrlTransform,
+} from "@/features/posts/markdown";
+import { markdownProseClassName } from "@/features/posts/markdown-prose";
 
 type MarkdownContentProps = {
   children: string;
@@ -15,14 +20,13 @@ export async function MarkdownContent({ children, kind }: MarkdownContentProps) 
   cacheLife("max");
 
   return (
-    <div className={`${styles.prose} ${kind === "heartwork" ? styles.heartworkProse : styles.regularProse}`}>
+    <div className={markdownProseClassName(kind)}>
       <MarkdownAsync
         skipHtml
-        remarkPlugins={[remarkGfm]}
-        remarkRehypeOptions={{
-          footnoteLabel: "脚注",
-          footnoteBackLabel: "返回正文",
-        }}
+        remarkPlugins={markdownRemarkPlugins}
+        remarkRehypeOptions={markdownRemarkRehypeOptions}
+        urlTransform={markdownUrlTransform}
+        components={markdownComponents}
         rehypePlugins={[
           rehypeSlug,
           [
