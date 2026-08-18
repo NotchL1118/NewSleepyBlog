@@ -305,14 +305,14 @@ export type Database = {
               p_body_markdown: string
               p_expected_kind: string
               p_expected_updated_at: string
-              p_group_id: number | null
-              p_new_group_name: string | null
-              p_new_group_slug: string | null
-              p_new_tag_name: string | null
-              p_new_tag_slug: string | null
+              p_group_id: number
+              p_new_group_name: string
+              p_new_group_slug: string
+              p_new_tag_name: string
+              p_new_tag_slug: string
               p_post_id: number
               p_slug: string
-              p_summary: string | null
+              p_summary: string
               p_tag_ids: number[]
               p_title: string
             }
@@ -576,3 +576,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

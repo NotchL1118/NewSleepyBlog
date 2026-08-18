@@ -484,7 +484,7 @@ export async function publishPost(
     };
   }
 
-  const args: PublishPostArgs = {
+  const args = {
     p_post_id: postId,
     p_expected_kind: kind,
     p_expected_updated_at: updatedAt,
@@ -500,7 +500,11 @@ export async function publishPost(
     p_new_tag_slug: tagValues.newTagSlug,
   };
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("publish_post", args);
+  // Generated Args treat unadorned SQL text/bigint parameters as required non-null.
+  const { data, error } = await supabase.rpc(
+    "publish_post",
+    args as PublishPostArgs,
+  );
 
   if (error || !data?.slug) {
     return publicationErrorState(error, updatedAt, kind);

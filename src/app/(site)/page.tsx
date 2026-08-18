@@ -32,31 +32,42 @@ export default async function Page() {
       <section id="recent" className="mt-24 scroll-mt-32 min-[821px]:mt-28">
         <header className="mb-3 flex items-baseline justify-between gap-6">
           <h2 className="text-xl font-semibold tracking-[-0.02em]">最近写下</h2>
-          <Link href="#recent" className="text-[13px] text-muted transition-colors hover:text-foreground">
-            查看全部 →
-          </Link>
+          {recentPosts.length > 0 ? (
+            <Link href="#recent" className="text-[13px] text-muted transition-colors hover:text-foreground">
+              查看全部 →
+            </Link>
+          ) : null}
         </header>
         <div className="border-t border-border">
-          {recentPosts.map((post) => (
-            <article
-              key={post.id}
-              className="grid gap-3 border-b border-border py-7 min-[640px]:grid-cols-[minmax(0,1fr)_auto] min-[640px]:gap-8"
-            >
-              <div>
-                <h3 className="text-xl font-medium tracking-[-0.025em] sm:text-2xl">
-                  <Link href={postPath(post)} className="transition-colors hover:text-accent">
-                    {post.title}
-                  </Link>
-                </h3>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-muted">
-                  {postDescription(post, siteConfig.description)}
-                </p>
-              </div>
-              <time dateTime={post.publishedAt} className="text-sm text-muted">
-                {dateFormatter.format(new Date(post.publishedAt))}
-              </time>
-            </article>
-          ))}
+          {recentPosts.length > 0 ? (
+            recentPosts.map((post) => (
+              <article
+                key={post.id}
+                className="grid gap-3 border-b border-border py-7 min-[640px]:grid-cols-[minmax(0,1fr)_auto] min-[640px]:gap-8"
+              >
+                <div>
+                  <h3 className="text-xl font-medium tracking-[-0.025em] sm:text-2xl">
+                    <Link href={postPath(post)} className="transition-colors hover:text-accent">
+                      {post.title}
+                    </Link>
+                  </h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-7 text-muted">
+                    {postDescription(post, siteConfig.description)}
+                  </p>
+                </div>
+                <time dateTime={post.publishedAt} className="text-sm text-muted">
+                  {dateFormatter.format(new Date(post.publishedAt))}
+                </time>
+              </article>
+            ))
+          ) : (
+            <div className="py-16">
+              <p className="text-base font-medium text-foreground">还没有公开文章</p>
+              <p className="mt-2 max-w-xl text-sm leading-7 text-muted">
+                第一篇已发布的普通文章或心作会出现在这里。
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </main>

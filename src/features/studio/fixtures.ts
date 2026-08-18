@@ -14,41 +14,6 @@ export type StudioCollection = {
 };
 
 export const studioCollections = {
-  posts: {
-    title: "普通文章",
-    eyebrow: "内容",
-    description: "管理技术、折腾与经验记录。",
-    actionLabel: "新建文章",
-    columns: [
-      { key: "title", label: "标题", className: "min-w-72" },
-      { key: "category", label: "分类" },
-      { key: "status", label: "状态" },
-      { key: "updated", label: "最近更新", className: "min-w-32" },
-    ],
-    rows: [
-      { title: "把复杂的事情慢慢说清楚", category: "设计", status: "已发布", updated: "2026.08.07" },
-      { title: "我的第一套个人网站工作流", category: "折腾", status: "已归档", updated: "2026.07.28" },
-      { title: "从一次迁移谈起", category: "技术", status: "草稿", updated: "2026.07.19" },
-      { title: "把日志留在能找到的地方", category: "经历", status: "已发布", updated: "2026.06.30" },
-    ],
-  },
-  heartworks: {
-    title: "心作",
-    eyebrow: "内容",
-    description: "整理生活札记与不急着得出结论的想法。",
-    actionLabel: "新建心作",
-    columns: [
-      { key: "title", label: "标题", className: "min-w-72" },
-      { key: "column", label: "专栏" },
-      { key: "status", label: "状态" },
-      { key: "updated", label: "最近更新", className: "min-w-32" },
-    ],
-    rows: [
-      { title: "夜里适合读些什么", column: "夜读", status: "已发布", updated: "2026.07.16" },
-      { title: "雨停以后慢慢走", column: "生活札记", status: "草稿", updated: "2026.07.10" },
-      { title: "一些关于远方的旧照片", column: "远行", status: "已归档", updated: "2026.06.18" },
-    ],
-  },
   categories: {
     title: "分类",
     eyebrow: "内容组织",
@@ -138,16 +103,3 @@ export const studioCollections = {
     ],
   },
 } as const satisfies Record<string, StudioCollection>;
-
-export const overviewMetrics = [
-  { label: "普通文章", value: "112", note: "8 篇草稿" },
-  { label: "心作", value: "24", note: "2 篇草稿" },
-  { label: "本月评论", value: "38", note: "3 条待查看" },
-  { label: "独立页面", value: "3", note: "全部公开" },
-] as const;
-
-export const recentActivity = [
-  { action: "更新了普通文章", target: "把复杂的事情慢慢说清楚", time: "2 小时前" },
-  { action: "收到新评论", target: "夜里适合读些什么", time: "昨天" },
-  { action: "归档了普通文章", target: "我的第一套个人网站工作流", time: "3 天前" },
-] as const;
