@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { buildPostMetadata, renderPostRoute, type PostRouteProps } from "@/features/posts/post-route";
+import { buildPostMetadata, renderPostRoute, type PostRouteProps } from "../../lib/post-route";
 
 export const instant = false;
 

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(36);
+select plan(37);
 
 select has_table('public', 'tags', 'Tags are persisted in a public table');
 select has_table(
@@ -23,7 +23,6 @@ select ok(
 select ok(
   has_table_privilege('authenticated', 'public.tags', 'insert')
     and has_column_privilege('authenticated', 'public.tags', 'name', 'update')
-    and not has_column_privilege('authenticated', 'public.tags', 'slug', 'update')
     and has_table_privilege('authenticated', 'public.tags', 'delete')
     and has_table_privilege('authenticated', 'public.post_tags', 'insert')
     and has_table_privilege('authenticated', 'public.post_tags', 'delete'),
@@ -41,18 +40,18 @@ select ok(
 select ok(
   has_function_privilege(
     'authenticated',
-    'public.create_tag(text,text)',
+    'public.create_tag(text)',
     'execute'
   ),
   'authenticated callers can invoke Tag creation through Admin RLS'
 );
 select ok(
-  not has_function_privilege('anon', 'public.create_tag(text,text)', 'execute'),
+  not has_function_privilege('anon', 'public.create_tag(text)', 'execute'),
   'anonymous Readers cannot invoke Tag creation'
 );
 select has_function(
   'public',
-  'update_post_draft',
+  'update_post_content',
   array[
     'bigint',
     'timestamp with time zone',
@@ -61,11 +60,9 @@ select has_function(
     'text',
     'text',
     'text',
-    'bigint[]',
-    'text',
-    'text'
+    'bigint[]'
   ],
-  'Draft saving accepts existing Tags and an optional new Tag atomically'
+  'Post content updates accept existing Tags atomically in every status'
 );
 select has_function(
   'public',
@@ -81,11 +78,9 @@ select has_function(
     'text',
     'text',
     'text',
-    'bigint[]',
-    'text',
-    'text'
+    'bigint[]'
   ],
-  'publication accepts existing Tags and an optional new Tag atomically'
+  'publication accepts existing Tags atomically'
 );
 
 delete from private.site_admins;
@@ -121,33 +116,33 @@ values
   (-8002, 'heartwork', null, 'Tagged Heartwork', 'tagged-heartwork', 'Body', 'draft', '2026-08-02 00:00:00+00', null),
   (-8003, 'regular', -8001, 'Public Tagged Post', 'public-tagged-post', 'Body', 'published', '2026-08-03 00:00:00+00', '2026-08-03 00:00:00+00');
 
-insert into public.tags (id, name, slug)
+insert into public.tags (id, name)
 overriding system value
 values
-  (-8001, 'Architecture', 'architecture'),
-  (-8002, 'Night Reading', 'night-reading'),
-  (-8003, 'Public Topic', 'public-topic');
+  (-8001, 'Architecture'),
+  (-8002, 'NightReading'),
+  (-8003, 'PublicTopic');
 
 insert into public.post_tags (post_id, tag_id)
 values (-8001, -8001), (-8003, -8003);
 
 select throws_ok(
-  $$insert into public.tags (name, slug) values ('Invalid Slug', 'Invalid Slug')$$,
+  $$insert into public.tags (name) values ('Invalid Tag')$$,
   '23514',
-  'new row for relation "tags" violates check constraint "tags_slug_check"',
-  'Tag Slugs require lowercase ASCII kebab-case'
+  'new row for relation "tags" violates check constraint "tags_name_no_whitespace_check"',
+  'Tag names cannot contain whitespace'
 );
 select throws_ok(
-  $$insert into public.tags (name, slug) values ('architecture', 'other-architecture')$$,
+  $$insert into public.tags (name) values ('architecture')$$,
   '23505',
   'duplicate key value violates unique constraint "tags_name_key"',
   'Tag names are globally case-insensitively unique'
 );
 select throws_ok(
-  $$insert into public.tags (name, slug) values ('Other Architecture', 'architecture')$$,
-  '23505',
-  'duplicate key value violates unique constraint "tags_slug_key"',
-  'Tag Slugs are globally unique'
+  $$insert into public.tags (name) values (repeat('a', 81))$$,
+  '23514',
+  'new row for relation "tags" violates check constraint "tags_name_length_check"',
+  'Tag names are limited to 80 characters'
 );
 
 set local role authenticated;
@@ -157,26 +152,25 @@ select set_config(
   true
 );
 
-select throws_ok(
-  $$update public.tags set slug = 'changed-architecture' where id = -8001$$,
-  '42501',
-  'permission denied for table tags',
-  'a Tag Slug remains stable after creation'
-);
+select hasnt_column('public', 'tags', 'slug', 'Tags do not expose a Slug column');
 select lives_ok(
-  $$select public.create_tag('  Database Design  ', 'database-design')$$,
+  $$select public.create_tag('  DatabaseDesign  ')$$,
   'the Admin can create a confirmed Tag'
 );
 select ok(
   exists (
     select 1 from public.tags
-    where name = 'Database Design' and slug = 'database-design'
+    where name = 'DatabaseDesign'
   ),
-  'Tag creation trims and persists the confirmed name and Slug'
+  'Tag creation trims and persists the confirmed name'
+);
+select lives_ok(
+  $$select public.create_tag('  FreshTopic  ')$$,
+  'a second Tag can be created explicitly before draft assignment'
 );
 select lives_ok(
   $$
-    select public.update_post_draft(
+    select public.update_post_content(
       -8001,
       '2026-08-01 00:00:00+00',
       -8001,
@@ -184,23 +178,24 @@ select lives_ok(
       'tagged-draft',
       null,
       'Updated body',
-      array[-8002]::bigint[],
-      '  Fresh Topic  ',
-      'fresh-topic'
+      array[
+        -8002,
+        (select id from public.tags where name = 'FreshTopic')
+      ]::bigint[]
     )
   $$,
-  'saving a Regular Post atomically replaces existing Tags and creates a new Tag'
+  'saving a Regular Post atomically replaces existing Tag references'
 );
 select results_eq(
   $$
-    select tag.slug
+    select tag.name
     from public.post_tags as post_tag
     join public.tags as tag on tag.id = post_tag.tag_id
     where post_tag.post_id = -8001
-    order by tag.slug
+    order by tag.name
   $$,
-  $$values ('fresh-topic'::text), ('night-reading'::text)$$,
-  'the saved Regular Post has exactly the selected and newly created Tags'
+  $$values ('FreshTopic'::text), ('NightReading'::text)$$,
+  'the saved Regular Post has exactly the selected Tags'
 );
 select results_eq(
   $$select title from public.posts where id = -8001$$,
@@ -211,7 +206,7 @@ select results_eq(
 select throws_ok(
   format(
     $$
-      select public.update_post_draft(
+      select public.update_post_content(
         -8001,
         %L,
         -8001,
@@ -219,15 +214,13 @@ select throws_ok(
         'tagged-draft',
         null,
         'Must roll back',
-        array[-8999]::bigint[],
-        null,
-        null
+        array[-8999]::bigint[]
       )
     $$,
     (select updated_at from public.posts where id = -8001)
   ),
   '23503',
-  'insert or update on table "post_tags" violates foreign key constraint "post_tags_tag_id_fkey"',
+  'One of the selected Tags no longer exists.',
   'an invalid Tag rolls back the entire Post save'
 );
 select results_eq(
@@ -237,21 +230,22 @@ select results_eq(
 );
 select results_eq(
   $$
-    select tag.slug
+    select tag.name
     from public.post_tags as post_tag
     join public.tags as tag on tag.id = post_tag.tag_id
     where post_tag.post_id = -8001
-    order by tag.slug
+    order by tag.name
   $$,
-  $$values ('fresh-topic'::text), ('night-reading'::text)$$,
+  $$values ('FreshTopic'::text), ('NightReading'::text)$$,
   'a failed Tag replacement restores the previous relationships'
 );
 
 select lives_ok(
   format(
     $$
-      select public.publish_regular_post(
+      select public.publish_post(
         -8001,
+        'regular',
         %L,
         -8001,
         null,
@@ -259,23 +253,28 @@ select lives_ok(
         'Tagged Draft Updated',
         'tagged-draft',
         null,
-        'Updated body'
+        'Updated body',
+        array(
+          select post_tag.tag_id
+          from public.post_tags as post_tag
+          where post_tag.post_id = -8001
+        )
       )
     $$,
     (select updated_at from public.posts where id = -8001)
   ),
-  'the legacy Regular Post publisher remains compatible'
+  'publishing a Regular Post retains every Tag saved on the draft'
 );
 select results_eq(
   $$
-    select tag.slug
+    select tag.name
     from public.post_tags as post_tag
     join public.tags as tag on tag.id = post_tag.tag_id
     where post_tag.post_id = -8001
-    order by tag.slug
+    order by tag.name
   $$,
-  $$values ('fresh-topic'::text), ('night-reading'::text)$$,
-  'the legacy Regular Post publisher retains every saved Tag'
+  $$values ('FreshTopic'::text), ('NightReading'::text)$$,
+  'publication keeps the selected Tags'
 );
 
 select lives_ok(
@@ -291,22 +290,20 @@ select lives_ok(
       'tagged-heartwork',
       null,
       'Body',
-      array[-8001, -8002]::bigint[],
-      null,
-      null
+      array[-8001, -8002]::bigint[]
     )
   $$,
   'publishing a Heartwork atomically persists its selected Tags'
 );
 select results_eq(
   $$
-    select tag.slug
+    select tag.name
     from public.post_tags as post_tag
     join public.tags as tag on tag.id = post_tag.tag_id
     where post_tag.post_id = -8002
-    order by tag.slug
+    order by tag.name
   $$,
-  $$values ('architecture'::text), ('night-reading'::text)$$,
+  $$values ('Architecture'::text), ('NightReading'::text)$$,
   'the published Heartwork has every selected Tag'
 );
 
@@ -315,7 +312,7 @@ set local role anon;
 
 select results_eq(
   $$select name from public.tags where id = -8003$$,
-  array['Public Topic'::text],
+  array['PublicTopic'::text],
   'anonymous Readers can read persisted Tags'
 );
 select results_eq(
@@ -333,7 +330,7 @@ select set_config(
 );
 
 select throws_ok(
-  $$select public.create_tag('Reader Tag', 'reader-tag')$$,
+  $$select public.create_tag('ReaderTag')$$,
   '42501',
   'Only the Sleepy Admin can create Tags.',
   'an authenticated Reader cannot create a Tag through the RPC'
@@ -351,9 +348,7 @@ select throws_ok(
       'tagged-draft',
       null,
       'Body',
-      array[-8001]::bigint[],
-      null,
-      null
+      array[-8001]::bigint[]
     )
   $$,
   '42501',
@@ -361,7 +356,7 @@ select throws_ok(
   'an authenticated Reader cannot mutate a Post and its Tags through the atomic RPC'
 );
 select throws_ok(
-  $$insert into public.tags (name, slug) values ('Direct Reader Tag', 'direct-reader-tag')$$,
+  $$insert into public.tags (name) values ('DirectReaderTag')$$,
   '42501',
   'new row violates row-level security policy for table "tags"',
   'an authenticated Reader cannot insert a Tag directly'

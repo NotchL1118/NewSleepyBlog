@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
-import { StudioCollectionPage } from "@/features/studio/StudioCollectionPage";
-import { studioCollections } from "@/features/studio/fixtures";
+import { Suspense } from "react";
+import { listTags } from "@/server/taxonomy/queries";
+import { TaxonomyManager } from "../components/TaxonomyManager";
 
 export const metadata: Metadata = { title: "标签" };
-export default function Page() { return <StudioCollectionPage collection={studioCollections.tags} />; }
+
+async function Tags() {
+  const rows = await listTags();
+  return <TaxonomyManager mode="tag" rows={rows} />;
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<p className="text-sm text-muted">正在加载标签…</p>}>
+      <Tags />
+    </Suspense>
+  );
+}

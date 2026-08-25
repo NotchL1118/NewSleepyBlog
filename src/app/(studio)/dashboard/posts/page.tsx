@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { PostList } from "@/features/posts/PostList";
+import { PostList } from "../components/PostList";
 import {
   readPostListFilters,
   type PostListSearchParams,
-} from "@/features/posts/studio-post-filters";
+} from "@/lib/posts/studio-post-filters";
 
 export const metadata: Metadata = { title: "普通文章" };
 export const instant = false;

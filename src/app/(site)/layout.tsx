@@ -1,12 +1,12 @@
 import { Suspense, type ReactNode } from "react";
-import { SiteHeader } from "@/components/SiteHeader";
-import { getViewer } from "@/features/auth/server";
+import { SiteHeader } from "./components/SiteHeader";
+import { getViewer } from "@/server/auth";
 
 function HeaderFallback() {
   return (
     <div
       aria-hidden="true"
-      className="min-h-16 border-b border-border bg-background"
+      className="min-h-[76px] min-[821px]:min-h-[92px]"
     />
   );
 }

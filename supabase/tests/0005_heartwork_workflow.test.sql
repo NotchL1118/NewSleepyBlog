@@ -17,7 +17,8 @@ select has_function(
     'text',
     'text',
     'text',
-    'text'
+    'text',
+    'bigint[]'
   ],
   'both Post variants share one atomic publication function'
 );
@@ -127,27 +128,23 @@ select results_eq(
 
 select lives_ok(
   $$
+    select public.create_post_group(
+      'heartwork', 'Created Column', 'created-column', null
+    )
+  $$,
+  'a Column can be created explicitly before Heartwork publication'
+);
+
+select lives_ok(
+  $$
     select public.publish_post(
-      -7002, 'heartwork', '2026-07-02 00:00:00+00', null,
-      'Created Column', 'created-column',
+      -7002, 'heartwork', '2026-07-02 00:00:00+00',
+      (select id from public.post_groups where slug = 'created-column'),
+      null, null,
       'New Column', 'new-column', null, 'Body'
     )
   $$,
-  'Heartwork publication can atomically create a Column'
-);
-
-select ok(
-  exists (
-    select 1
-    from public.posts as post
-    join public.post_groups as post_group on post_group.id = post.group_id
-    where post.id = -7002
-      and post.kind = 'heartwork'
-      and post_group.kind = 'heartwork'
-      and post_group.name = 'Created Column'
-      and post_group.slug = 'created-column'
-  ),
-  'a newly created group is persisted as a Heartwork Column'
+  'Heartwork publication accepts the explicitly created Column by ID'
 );
 
 select throws_ok(

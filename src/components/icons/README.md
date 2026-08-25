@@ -8,12 +8,16 @@ Inventory of shared SVG icons. Implementation: `index.tsx` only.
 2. If nothing fits, add a named export in `index.tsx` and a row here in the same change.
 3. Rename or delete: update this table in the same change.
 
-Do not paste SVG paths here.
+Import shared icons from `@/components/icons`. Keep every icon as a named exported function in `index.tsx`; do not create per-icon files, duplicate SVGs inline in features or UI components, icon object maps, or a separate icon library package unless the task explicitly requires one.
+
+Size and color icons through `className` and `currentColor`. Keep decorative icons `aria-hidden="true"` unless accessibility requires otherwise. Do not paste SVG paths into this README.
 
 ## Inventory
 
 | Export | Purpose | Notes |
 |--------|---------|--------|
+| `ArrowLeftIcon` | Back navigation | Default `size-5` |
+| `CheckIcon` | Selected option indicator | No default size; callers set `className` |
 | `ChevronIcon` | Expand / dropdown affordance | No default size; callers set `className` |
 | `CloseIcon` | Close a dialog or drawer | Default `size-5` |
 | `CommentIcon` | Comments and moderation | Default `size-5` |

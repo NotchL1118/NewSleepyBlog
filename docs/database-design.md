@@ -210,18 +210,16 @@ Flat, reusable, optional labels shared by Regular Posts and Heartworks.
 | Column | Type | Rules |
 | --- | --- | --- |
 | `id` | `bigint` | Identity primary key |
-| `name` | `text` | Not null; case-insensitively unique |
-| `slug` | `text` | Not null; globally unique and stable |
+| `name` | `text` | Not null; 1–80 characters; no whitespace; case-insensitively unique |
 | `created_at` | `timestamptz` | Not null; defaults to `now()` |
 | `updated_at` | `timestamptz` | Not null; defaults to `now()` and is maintained automatically |
 
 Constraints and indexes:
 
-- unique `slug`;
 - unique index on `lower(name)`;
-- `slug` matches `^[a-z0-9]+(-[a-z0-9]+)*$` and remains stable after creation.
+- `name` contains no whitespace and is at most 80 characters.
 
-Tags are not hierarchical. They may be created from the Post editor or a dedicated management screen. Deleting a Tag removes its Post relationships but does not delete Posts.
+Tags are not hierarchical and do not have Slugs or public routes. They may be created from the Post editor or a dedicated management screen. Deleting a Tag removes its Post relationships but does not delete Posts.
 
 ### `post_tags`
 

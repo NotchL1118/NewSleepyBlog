@@ -1,6 +1,6 @@
 "use client";
 
-import { useSignOut } from "@/features/auth/useSignOut";
+import { useSignOut } from "@/lib/auth/useSignOut";
 
 export function SwitchAccountButton() {
   const { signingOut, signOut } = useSignOut();

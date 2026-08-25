@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import { requireAdmin } from "@/features/auth/server";
-import { StudioShell } from "@/features/studio/StudioShell";
+import { requireAdmin } from "@/server/auth";
+import { StudioShell } from "./components/StudioShell";
 
 // Admin authorization must complete before any Studio UI is sent.
 export const instant = false;
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const viewer = await requireAdmin();
-  return <StudioShell viewer={viewer}>{children}</StudioShell>;
+  await requireAdmin();
+  return <StudioShell>{children}</StudioShell>;
 }

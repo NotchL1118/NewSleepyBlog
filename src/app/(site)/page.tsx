@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
-import { postDescription, postPath } from "@/features/posts/content";
-import { listRecentPosts } from "@/features/posts/public-posts";
+import { postDescription, postPath } from "@/lib/posts/content";
+import { listRecentPosts } from "@/server/posts/public-posts";
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric",

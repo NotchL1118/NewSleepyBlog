@@ -59,9 +59,9 @@ values
   (-9001, 'regular', 'Issue 9 Category', 'issue-9-category'),
   (-9002, 'heartwork', 'Issue 9 Column', 'issue-9-column');
 
-insert into public.tags (id, name, slug)
+insert into public.tags (id, name)
 overriding system value
-values (-9001, 'Issue 9 Tag', 'issue-9-tag');
+values (-9001, 'Issue9Tag');
 
 insert into public.posts (
   id,

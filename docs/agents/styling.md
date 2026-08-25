@@ -20,6 +20,12 @@ Use these rules when creating or changing pages, UI components, themes, or style
 
 When Tailwind and a CSS Module are both appropriate, use Tailwind for the component's ordinary structure and appearance, and the CSS Module for the exceptional effect.
 
+## Responsive design
+
+- Build mobile-first: base styles target narrow screens, then Tailwind breakpoint variants progressively enhance wider layouts.
+- Implement responsive behavior with the initial page or component change rather than deferring it after the desktop layout.
+- Check every changed page or component at mobile and desktop widths. Content must remain readable, controls usable, spacing appropriate, and the page free of unintended horizontal overflow.
+
 ## Animation
 
 - Prefer CSS transitions for simple hover, focus, color, opacity, and transform effects.

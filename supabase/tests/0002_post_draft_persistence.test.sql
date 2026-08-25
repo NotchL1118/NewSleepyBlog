@@ -148,13 +148,13 @@ select throws_ok(
 );
 select throws_ok(
   $$
-    select public.update_post_draft(
+    select public.update_post_content(
       p_post_id => -3003,
       p_expected_updated_at => '2026-01-01 00:00:00+00'
     )
   $$,
   '42501',
-  'Only the Sleepy Admin can update Post drafts.',
+  'Only the Sleepy Admin can update Posts.',
   'an authenticated Reader cannot update a Draft Post'
 );
 select throws_ok(
@@ -210,7 +210,7 @@ select ok(
 );
 select lives_ok(
   $$
-    select public.update_post_draft(
+    select public.update_post_content(
       p_post_id => -3003,
       p_expected_updated_at => '2026-01-01 00:00:00+00',
       p_title => 'Resumable draft',
@@ -226,14 +226,14 @@ select results_eq(
 );
 select throws_ok(
   $$
-    select public.update_post_draft(
+    select public.update_post_content(
       p_post_id => -3003,
       p_expected_updated_at => '2026-01-01 00:00:00+00',
       p_title => 'Stale overwrite'
     )
   $$,
   '40001',
-  'Post draft -3003 has changed since it was loaded.',
+  'Post -3003 has changed since it was loaded.',
   'a stale updated_at value is rejected'
 );
 select results_eq(

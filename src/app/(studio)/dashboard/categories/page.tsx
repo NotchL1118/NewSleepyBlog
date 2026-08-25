@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
-import { StudioCollectionPage } from "@/features/studio/StudioCollectionPage";
-import { studioCollections } from "@/features/studio/fixtures";
+import { Suspense } from "react";
+import { listPostGroups } from "@/server/taxonomy/queries";
+import { TaxonomyManager } from "../components/TaxonomyManager";
 
 export const metadata: Metadata = { title: "分类" };
-export default function Page() { return <StudioCollectionPage collection={studioCollections.categories} />; }
+
+async function Categories() {
+  const rows = await listPostGroups("regular");
+  return <TaxonomyManager mode="regular" rows={rows} />;
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<p className="text-sm text-muted">正在加载分类…</p>}>
+      <Categories />
+    </Suspense>
+  );
+}

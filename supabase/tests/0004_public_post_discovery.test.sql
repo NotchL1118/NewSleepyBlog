@@ -4,6 +4,7 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(4);
 
+delete from public.posts;
 delete from private.site_admins;
 
 insert into auth.users (id, email)
@@ -90,8 +91,9 @@ select set_config(
   true
 );
 
-select public.publish_regular_post(
+select public.publish_post(
   -6007,
+  'regular',
   '2026-06-07 00:00:00+00',
   -6001,
   null,

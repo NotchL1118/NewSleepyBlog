@@ -18,6 +18,24 @@ export function ChevronIcon({ className, ...props }: IconProps) {
   );
 }
 
+export function CheckIcon({ className, ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+      aria-hidden="true"
+    >
+      <path d="m3.5 8 3 3 6-6" />
+    </svg>
+  );
+}
+
 export function GitHubIcon({ className = "size-[18px]", ...props }: IconProps) {
   return (
     <svg
@@ -115,6 +133,14 @@ function LineIcon({ className = "size-5", children, ...props }: IconProps) {
     >
       {children}
     </svg>
+  );
+}
+
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <LineIcon {...props}>
+      <path d="m10 6-6 6 6 6M4 12h16" />
+    </LineIcon>
   );
 }
 

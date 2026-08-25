@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireAdmin } from "@/features/auth/server";
+import { Suspense } from "react";
+import { requireAdmin } from "@/server/auth";
 
 export const metadata: Metadata = { title: "概览" };
+
+const greetingClassName =
+  "mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl";
+
+async function Greeting() {
+  const viewer = await requireAdmin();
+
+  return <h1 className={greetingClassName}>晚上好，{viewer.displayName}</h1>;
+}
 
 const createLinks = [
   { href: "/dashboard/posts/new", label: "新建普通文章" },
@@ -14,16 +24,14 @@ const browseLinks = [
   { href: "/dashboard/heartworks", label: "心作" },
 ] as const;
 
-export default async function DashboardPage() {
-  const viewer = await requireAdmin();
-
+export default function DashboardPage() {
   return (
     <>
       <header>
         <p className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">工作台</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-          晚上好，{viewer.displayName}
-        </h1>
+        <Suspense fallback={<h1 className={greetingClassName}>晚上好</h1>}>
+          <Greeting />
+        </Suspense>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-muted sm:text-base">
           这里是 Sleepy 全站内容的工作台。普通文章和心作从空的内容库开始，不会显示演示文章。
         </p>

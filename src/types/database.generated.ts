@@ -158,21 +158,18 @@ export type Database = {
           created_at: string
           id: number
           name: string
-          slug: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: never
           name: string
-          slug: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: never
           name?: string
-          slug?: string
           updated_at?: string
         }
         Relationships: []
@@ -182,13 +179,44 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_and_publish_post: {
+        Args: {
+          p_body_markdown: string
+          p_expected_kind: string
+          p_group_id: number
+          p_slug: string
+          p_summary: string
+          p_tag_ids?: number[]
+          p_title: string
+        }
+        Returns: {
+          archive_note: string | null
+          archived_at: string | null
+          body_markdown: string
+          comments_enabled: boolean
+          created_at: string
+          group_id: number | null
+          id: number
+          kind: string
+          published_at: string | null
+          slug: string | null
+          status: string
+          summary: string | null
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_post_draft: {
         Args: {
           p_body_markdown?: string
           p_group_id?: number
           p_kind: string
-          p_new_tag_name?: string
-          p_new_tag_slug?: string
           p_slug?: string
           p_summary?: string
           p_tag_ids?: number[]
@@ -217,13 +245,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_post_group: {
+        Args: {
+          p_description?: string
+          p_kind: string
+          p_name: string
+          p_slug: string
+        }
+        Returns: {
+          created_at: string
+          description: string | null
+          id: number
+          kind: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_groups"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_tag: {
-        Args: { p_name: string; p_slug: string }
+        Args: { p_name: string }
         Returns: {
           created_at: string
           id: number
           name: string
-          slug: string
           updated_at: string
         }
         SetofOptions: {
@@ -262,86 +312,44 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_post_group: {
+        Args: { p_expected_updated_at: string; p_group_id: number }
+        Returns: {
+          created_at: string
+          description: string | null
+          id: number
+          kind: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_groups"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      delete_tag: {
+        Args: { p_expected_updated_at: string; p_tag_id: number }
+        Returns: {
+          created_at: string
+          id: number
+          name: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tags"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       is_admin: { Args: never; Returns: boolean }
-      publish_post:
-        | {
-            Args: {
-              p_body_markdown: string
-              p_expected_kind: string
-              p_expected_updated_at: string
-              p_group_id: number
-              p_new_group_name: string
-              p_new_group_slug: string
-              p_post_id: number
-              p_slug: string
-              p_summary: string
-              p_title: string
-            }
-            Returns: {
-              archive_note: string | null
-              archived_at: string | null
-              body_markdown: string
-              comments_enabled: boolean
-              created_at: string
-              group_id: number | null
-              id: number
-              kind: string
-              published_at: string | null
-              slug: string | null
-              status: string
-              summary: string | null
-              title: string | null
-              updated_at: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "posts"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              p_body_markdown: string
-              p_expected_kind: string
-              p_expected_updated_at: string
-              p_group_id: number
-              p_new_group_name: string
-              p_new_group_slug: string
-              p_new_tag_name: string
-              p_new_tag_slug: string
-              p_post_id: number
-              p_slug: string
-              p_summary: string
-              p_tag_ids: number[]
-              p_title: string
-            }
-            Returns: {
-              archive_note: string | null
-              archived_at: string | null
-              body_markdown: string
-              comments_enabled: boolean
-              created_at: string
-              group_id: number | null
-              id: number
-              kind: string
-              published_at: string | null
-              slug: string | null
-              status: string
-              summary: string | null
-              title: string | null
-              updated_at: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "posts"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-      publish_regular_post: {
+      publish_post: {
         Args: {
           p_body_markdown: string
+          p_expected_kind: string
           p_expected_updated_at: string
           p_group_id: number
           p_new_group_name: string
@@ -349,6 +357,7 @@ export type Database = {
           p_post_id: number
           p_slug: string
           p_summary: string
+          p_tag_ids?: number[]
           p_title: string
         }
         Returns: {
@@ -405,13 +414,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      update_post_draft: {
+      update_post_content: {
         Args: {
           p_body_markdown?: string
           p_expected_updated_at: string
           p_group_id?: number
-          p_new_tag_name?: string
-          p_new_tag_slug?: string
           p_post_id: number
           p_slug?: string
           p_summary?: string
@@ -437,6 +444,48 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_post_group: {
+        Args: {
+          p_description?: string
+          p_expected_updated_at: string
+          p_group_id: number
+          p_name: string
+        }
+        Returns: {
+          created_at: string
+          description: string | null
+          id: number
+          kind: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_groups"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_tag: {
+        Args: {
+          p_expected_updated_at: string
+          p_name: string
+          p_tag_id: number
+        }
+        Returns: {
+          created_at: string
+          id: number
+          name: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tags"
           isOneToOne: true
           isSetofReturn: false
         }

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PostEditor } from "@/features/posts/PostEditor";
-import { getPostGroups, getStudioPost, getTags } from "@/features/posts/studio-post-editor";
+import { PostEditor } from "../../components/PostEditor";
+import { getPostGroups, getStudioPost, getTags } from "@/server/posts/studio-post-editor";
 
 export const metadata: Metadata = { title: "管理普通文章" };
+export const instant = false;
 
 export default async function Page({
   params,

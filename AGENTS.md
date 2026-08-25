@@ -1,43 +1,41 @@
 ## Package manager
 
-This project uses **pnpm** for package management.
+Use **pnpm**.
+
+## Supabase local database safety
+
+Preserve the default local Supabase database when applying or verifying migrations. Use `pnpm exec supabase migration up --local` for pending migrations and run the existing verification commands against that database.
+
+Never run `supabase db reset` against the default local stack. It recreates the database and deletes local Auth users, the Admin allowlist, and local content; `--no-seed` does not preserve them. Do not perform a clean migration replay as part of routine local verification. If one is explicitly requested, stop and agree on a safe verification environment with the user first. Read `docs/local-development.md` for the local workflow.
 
 ## Agent skills
 
 ### Issue tracker
 
-Issues live in this repo's GitHub Issues (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+For issue operations, use this repo's GitHub Issues via `gh`; read `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Canonical roles map 1:1 to labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+For triage work, use the canonical label mapping in `docs/agents/triage-labels.md`.
+
+### Project structure
+
+Before adding or moving code under `src/`, read `docs/agents/project-structure.md`.
 
 ### Domain docs
 
-Single-context layout: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
+Before exploring the codebase or doing domain work, read `docs/agents/domain.md`.
 
-### Visual style
+### UI and styling
 
-Before creating or changing pages, UI components, themes, or styles, read and follow both:
+Before changing pages, UI components, themes, styles, or responsive behavior, read and follow:
 
-- `docs/agents/visual-style.md` for visual direction;
-- `docs/agents/styling.md` for styling implementation conventions.
-
-The visual style guide governs visual presentation only. Do not use it to infer or alter content structure, page modules, feature priority, or product behavior unless the task explicitly requests those changes.
-
-### Responsive design
-
-Build responsive behavior from the start; do not finish a desktop-only layout and defer mobile adaptation. Use a mobile-first approach: base styles target narrow screens, and Tailwind breakpoint variants progressively enhance wider layouts. Every page or component change must be checked at both mobile and desktop widths for readable content, usable controls, appropriate spacing, and no unintended horizontal overflow.
+- `docs/agents/visual-style.md` for presentation constraints;
+- `docs/agents/styling.md` for implementation, responsive, and animation rules.
 
 ### Icons
 
-All shared SVG icons live in a single module: `src/components/icons/index.tsx`. The inventory and reuse rules live beside it in `src/components/icons/README.md`.
-
-- **Before adding an icon**, read `src/components/icons/README.md` and reuse an existing export when it fits (same or close meaning).
-- Define each icon as a named exported function in `index.tsx` only (for example `export function MenuIcon`). Import from `@/components/icons`; do not re-declare the same SVG inline in feature or UI components.
-- Size and color via `className` / `currentColor`; keep icons decorative with `aria-hidden="true"` unless accessibility requires otherwise.
-- When you add, rename, or delete an icon, update the inventory table in `README.md` in the **same change**. Do not paste SVG paths into the README.
-- Do not create per-icon files, icon object maps, or a separate icon library package unless the task explicitly requires it.
+Before adding, changing, or deleting a shared icon, read `src/components/icons/README.md` and use its inventory and implementation rules.
 
 ### Demo directory
 

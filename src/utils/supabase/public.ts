@@ -2,12 +2,11 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.generated";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+import { requireSupabaseConfig } from "./config";
 
 export function createPublicClient() {
-  return createClient<Database>(supabaseUrl!, supabaseKey!, {
+  const { url, publishableKey } = requireSupabaseConfig();
+  return createClient<Database>(url, publishableKey, {
     auth: {
       autoRefreshToken: false,
       detectSessionInUrl: false,

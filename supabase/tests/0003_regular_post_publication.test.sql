@@ -6,9 +6,10 @@ select plan(19);
 
 select has_function(
   'public',
-  'publish_regular_post',
+  'publish_post',
   array[
     'bigint',
+    'text',
     'timestamp with time zone',
     'bigint',
     'text',
@@ -16,16 +17,25 @@ select has_function(
     'text',
     'text',
     'text',
-    'text'
+    'text',
+    'bigint[]'
   ],
-  'Regular Posts expose one atomic publication function'
+  'Regular Posts publish through the shared atomic publication function'
 );
 select ok(
-  has_function_privilege('authenticated', 'public.publish_regular_post(bigint,timestamptz,bigint,text,text,text,text,text,text)', 'execute'),
+  has_function_privilege(
+    'authenticated',
+    'public.publish_post(bigint,text,timestamptz,bigint,text,text,text,text,text,text,bigint[])',
+    'execute'
+  ),
   'authenticated callers can invoke publication through Admin RLS'
 );
 select ok(
-  not has_function_privilege('anon', 'public.publish_regular_post(bigint,timestamptz,bigint,text,text,text,text,text,text)', 'execute'),
+  not has_function_privilege(
+    'anon',
+    'public.publish_post(bigint,text,timestamptz,bigint,text,text,text,text,text,text,bigint[])',
+    'execute'
+  ),
   'anonymous Readers cannot invoke publication'
 );
 
@@ -94,8 +104,8 @@ select set_config(
 
 select throws_ok(
   $$
-    select public.publish_regular_post(
-      -5001, '2026-05-01 00:00:00+00', -5001, null, null,
+    select public.publish_post(
+      -5001, 'regular', '2026-05-01 00:00:00+00', -5001, null, null,
       '   ', 'blank-title', null, 'Body'
     )
   $$,
@@ -105,8 +115,8 @@ select throws_ok(
 );
 select throws_ok(
   $$
-    select public.publish_regular_post(
-      -5001, '2026-05-01 00:00:00+00', -5001, null, null,
+    select public.publish_post(
+      -5001, 'regular', '2026-05-01 00:00:00+00', -5001, null, null,
       'Title', 'Invalid Slug', null, 'Body'
     )
   $$,
@@ -116,8 +126,8 @@ select throws_ok(
 );
 select throws_ok(
   $$
-    select public.publish_regular_post(
-      -5001, '2026-05-01 00:00:00+00', -5001, null, null,
+    select public.publish_post(
+      -5001, 'regular', '2026-05-01 00:00:00+00', -5001, null, null,
       'Title', 'blank-body', null, E' \n '
     )
   $$,
@@ -127,8 +137,8 @@ select throws_ok(
 );
 select throws_ok(
   $$
-    select public.publish_regular_post(
-      -5003, '2026-05-03 00:00:00+00', -5002, null, null,
+    select public.publish_post(
+      -5003, 'regular', '2026-05-03 00:00:00+00', -5002, null, null,
       'Wrong Category', 'wrong-category', null, 'Body'
     )
   $$,
@@ -138,57 +148,48 @@ select throws_ok(
 );
 select throws_ok(
   $$
-    select public.publish_regular_post(
-      -5005, '2026-05-05 00:00:00+00', -5001, null, null,
+    select public.publish_post(
+      -5005, 'regular', '2026-05-05 00:00:00+00', -5001, null, null,
       'Duplicate Slug', 'existing-public-post', null, 'Body'
     )
   $$,
   '23505',
-  'duplicate key value violates unique constraint "posts_slug_key"',
+  'That Post Slug is already taken.',
   'publishing rejects a duplicate Post Slug'
 );
 select lives_ok(
   $$
-    select public.publish_regular_post(
-      -5002, '2026-05-02 00:00:00+00', null,
-      'Created Category', 'created-category',
-      'Create Category', 'create-category', 'Summary', 'Body'
+    select public.create_post_group(
+      'regular', 'Created Category', 'created-category', null
     )
   $$,
-  'publishing can atomically create a confirmed Category'
-);
-select ok(
-  exists (
-    select 1
-    from public.posts as post
-    join public.post_groups as post_group on post_group.id = post.group_id
-    where post.id = -5002
-      and post.status = 'published'
-      and post.published_at is not null
-      and post_group.kind = 'regular'
-      and post_group.name = 'Created Category'
-      and post_group.slug = 'created-category'
-  ),
-  'publication persists the new Category and first publication time'
+  'a Category can be created explicitly before publication'
 );
 select lives_ok(
   $$
-    select public.publish_regular_post(
-      -5001, '2026-05-01 00:00:00+00', -5001, null, null,
+    select public.publish_post(
+      -5002, 'regular', '2026-05-02 00:00:00+00',
+      (select id from public.post_groups where slug = 'created-category'),
+      null, null,
+      'Create Category', 'create-category', 'Summary', 'Body'
+    )
+  $$,
+  'publication accepts the explicitly created Category by ID'
+);
+select lives_ok(
+  $$
+    select public.publish_post(
+      -5001, 'regular', '2026-05-01 00:00:00+00', -5001, null, null,
       'Published Regular Post', 'published-regular-post', null, 'Published body'
     )
   $$,
   'publishing can select an existing Regular Post Category'
 );
 
-update public.posts
-set status = 'draft'
-where id = -5001;
-
 select throws_ok(
   format(
     $$
-      select public.update_post_draft(
+      select public.update_post_content(
         p_post_id => -5001,
         p_expected_updated_at => %L,
         p_group_id => -5001,
@@ -203,10 +204,6 @@ select throws_ok(
   'Post Slug cannot change after first publication.',
   'the Post Slug locks after first publication'
 );
-
-update public.posts
-set status = 'published'
-where id = -5001;
 
 reset role;
 set local role anon;
@@ -248,8 +245,8 @@ select set_config(
 
 select throws_ok(
   $$
-    select public.publish_regular_post(
-      -5006, '2026-05-06 00:00:00+00', -5001, null, null,
+    select public.publish_post(
+      -5006, 'regular', '2026-05-06 00:00:00+00', -5001, null, null,
       'Reader Publish', 'reader-publish', null, 'Body'
     )
   $$,

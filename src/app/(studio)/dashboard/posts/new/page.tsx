@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { PostEditor } from "@/features/posts/PostEditor";
-import { getPostGroups, getTags } from "@/features/posts/studio-post-editor";
+import { PostEditor } from "../../components/PostEditor";
+import { getPostGroups, getTags } from "@/server/posts/studio-post-editor";
 
 export const metadata: Metadata = { title: "新建普通文章" };
+export const instant = false;
 
 export default async function Page() {
   const [groups, tags] = await Promise.all([

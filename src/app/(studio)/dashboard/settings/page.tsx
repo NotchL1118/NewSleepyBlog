@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { requireAdmin } from "@/features/auth/server";
-import { DemoButton } from "@/features/studio/DemoButton";
+import { DemoButton } from "../components/DemoButton";
 
 export const metadata: Metadata = { title: "站点设置" };
 
@@ -24,9 +23,7 @@ const settingSections = [
   },
 ] as const;
 
-export default async function SettingsPage() {
-  await requireAdmin();
-
+export default function SettingsPage() {
   return (
     <>
       <header>
