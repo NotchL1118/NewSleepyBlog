@@ -1,0 +1,3 @@
+# Authorize Studio through a private Admin allowlist
+
+Sleepy authorizes access to the private Studio by checking the authenticated Supabase user ID against a private `site_admins` allowlist through `private.is_admin()`. GitHub usernames, email addresses, client state, and user-editable metadata are not authorization sources: readers and the sole Admin share one GitHub login flow, while the private allowlist supplies the separate, server-verifiable Admin decision needed to protect `/dashboard/*`. After the Admin completes the ordinary GitHub login flow for the first time, their Supabase user ID is added to the allowlist through a documented one-time manual database operation; the application exposes no self-promotion or first-login-wins path.

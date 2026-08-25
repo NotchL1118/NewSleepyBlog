@@ -1,0 +1,3 @@
+# Use exclusive foreign-key columns for comment targets
+
+Comments reference their target through per-type nullable foreign-key columns (`post_id`, `page_id`) with exactly one non-null, rather than a polymorphic type-and-id pair backed by logical foreign keys. Real foreign keys preserve cascade deletion when a target is removed, reject dangling or mistyped references, and keep PostgREST relationship embedding working, while a polymorphic pair would still require per-type RLS branches and application-managed cleanup. Each future target type, such as Moments, costs one nullable column, a `CHECK` update, and an index, which is accepted.

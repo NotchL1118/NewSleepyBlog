@@ -1,0 +1,3 @@
+# Separate the canonical public domain from the Vercel origin domain
+
+Sleepy's canonical production origin is `https://lsyfighting.cn`; `https://blog.lsyfighting.cn` permanently redirects to the same path on that canonical domain, while `vercel.lsyfighting.cn` exists only as the external CDN's Vercel origin hostname. Application URLs, OAuth redirects, cookies, metadata, and canonical links use `lsyfighting.cn`, and neither the redirecting alias nor the origin hostname is accepted as a production authentication callback. The CDN must preserve query strings, cookies, and `Set-Cookie` responses and must not cache authentication or Admin routes.

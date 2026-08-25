@@ -1,0 +1,3 @@
+-- Sleepy local seed is intentionally empty of content.
+-- Do not insert demo Posts, Post Groups, or Tags here.
+-- Create the first Admin through the documented GitHub login and private allowlist steps.

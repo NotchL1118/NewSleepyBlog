@@ -1,23 +1,29 @@
-# NewSleepyBlog
+# Sleepy
 
-一个正在建设中的个人博客系统，用于记录技术学习、生活随笔与个人思考。
-
-## 项目状态
-
-项目目前处于初始化阶段，功能与技术栈将随着开发逐步完善。
-
-## 计划功能
-
-- 文章发布与管理
-- Markdown 内容支持
-- 分类与标签
-- 文章搜索
-- 响应式页面
-- 深色模式
+Sleepy 是一个由站点所有者独立写作、面向公开读者发布内容的个人博客。Admin 在 Studio 中创作普通文章和心作；读者阅读公开内容，登录后可以参与评论，但不会获得内容创作权限。
 
 ## 本地开发
 
-开发环境与启动方式将在项目基础结构完成后补充。
+本地内容库从空开始，不依赖演示文章。完整的启动、向前 migration、Admin 初始化和人工 smoke test 见 [docs/local-development.md](./docs/local-development.md)。GitHub 登录与生产回调见 [docs/auth-setup.md](./docs/auth-setup.md)。
+
+```bash
+cp .env.example .env.local
+pnpm install
+pnpm exec supabase start
+pnpm exec supabase migration up --local
+pnpm dev
+```
+
+首次通过 GitHub 登录后，把这次登录对应的 Auth UUID 写入 `private.site_admins`。不要对已经有 Admin 的本地库执行 `supabase db reset`。
+
+## 验证
+
+```bash
+pnpm exec tsc --noEmit
+pnpm lint
+pnpm test
+pnpm build
+```
 
 ## License
 

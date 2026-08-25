@@ -1,0 +1,3 @@
+# Use invoker functions for atomic content mutations
+
+Content mutations that must update a Post and its Tag relationships together run through narrowly scoped PostgreSQL functions so optimistic concurrency checks and every related write commit or roll back as one transaction. The functions use the caller's privileges and remain subject to Admin RLS; Server Actions still authenticate the Admin, validate input, invoke the transaction, and invalidate caches. We chose this over multiple independent Data API mutations, which can leave partially updated content, and over `SECURITY DEFINER` functions, which would bypass the authorization boundary the RLS policies are intended to enforce.
