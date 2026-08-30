@@ -1,39 +1,79 @@
 .prose {
   color: color-mix(in srgb, var(--foreground) 92%, var(--muted));
   font-size: 1.0625rem;
-  line-height: 1.95;
+  line-height: 1.8;
   overflow-wrap: anywhere;
 }
 
 .heartworkProse {
   font-size: 1.1rem;
-  line-height: 2.08;
+  line-height: 1.8;
 }
 
 .prose :global(p) {
-  margin-block: 0.82em;
+  margin: 0 0 0.9em;
 }
 
+.prose > :global(:first-child) {
+  margin-top: 0;
+}
+
+.prose :global(h1),
 .prose :global(h2),
-.prose :global(h3) {
+.prose :global(h3),
+.prose :global(h4),
+.prose :global(h5),
+.prose :global(h6) {
   scroll-margin-top: 8rem;
   color: var(--foreground);
-  font-weight: 620;
+  font-weight: 600;
+  letter-spacing: normal;
   text-wrap: balance;
 }
 
+.prose :global(h1) {
+  margin: 1.8em 0 0.65em;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
 .prose :global(h2) {
-  margin: 2.75em 0 0.72em;
-  font-size: 1.72rem;
-  line-height: 1.3;
-  letter-spacing: -0.035em;
+  margin: 1.85em 0 0.58em;
+  font-size: 1.625rem;
+  line-height: 1.35;
 }
 
 .prose :global(h3) {
-  margin: 2.1em 0 0.62em;
-  font-size: 1.28rem;
-  line-height: 1.4;
-  letter-spacing: -0.025em;
+  margin: 1.6em 0 0.5em;
+  font-size: 1.25rem;
+  line-height: 1.45;
+}
+
+.prose :global(h4) {
+  margin: 1.4em 0 0.4em;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.prose :global(h5) {
+  margin: 1.3em 0 0.35em;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.prose :global(h6) {
+  margin: 1.2em 0 0.35em;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.prose :global(h1 + h2),
+.prose :global(h2 + h3),
+.prose :global(h3 + h4),
+.prose :global(h4 + h5),
+.prose :global(h5 + h6) {
+  margin-top: 0.85em;
 }
 
 .prose :global(a) {
@@ -44,7 +84,7 @@
 }
 
 .prose :global(blockquote) {
-  margin-block: 1.55em;
+  margin-block: 1.35em;
   padding: 0.1em 0 0.1em 1.25em;
   border-left: 2px solid var(--accent);
   color: var(--muted);
@@ -57,22 +97,71 @@
 
 .prose :global(ul),
 .prose :global(ol) {
-  margin-block: 1em;
-  padding-left: 1.5em;
+  margin-block: 0.8em 1em;
+  padding-left: 1.55em;
+}
+
+.prose :global(ul) {
+  list-style-type: disc;
+}
+
+.prose :global(ul ul) {
+  list-style-type: circle;
+}
+
+.prose :global(ul ul ul) {
+  list-style-type: square;
+}
+
+.prose :global(ol) {
+  list-style-type: decimal;
+}
+
+.prose :global(ol ol) {
+  list-style-type: lower-alpha;
+}
+
+.prose :global(ol ol ol) {
+  list-style-type: lower-roman;
 }
 
 .prose :global(li) {
-  margin-block: 0.35em;
-  padding-left: 0.2em;
+  margin-block: 0.24em;
+  padding-left: 0.16em;
 }
 
 .prose :global(li::marker) {
   color: var(--muted);
 }
 
+.prose :global(ol > li::marker) {
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.prose :global(li > p) {
+  margin-block: 0.28em;
+}
+
+.prose :global(li > ul),
+.prose :global(li > ol) {
+  margin-block: 0.32em;
+}
+
+.prose :global(.contains-task-list) {
+  padding-left: 0.15em;
+  list-style: none;
+}
+
+.prose :global(.task-list-item) {
+  padding-left: 0;
+}
+
 .prose :global(input[type="checkbox"]) {
-  margin-right: 0.5em;
+  margin: 0 0.55em 0 0;
   accent-color: var(--accent);
+  vertical-align: -0.08em;
 }
 
 .prose :global(code:not([data-theme])) {
@@ -84,7 +173,7 @@
 }
 
 .prose :global(figure[data-rehype-pretty-code-figure]) {
-  margin-block: 1.7em;
+  margin-block: 1.4em;
 }
 
 .prose :global(pre) {
@@ -111,7 +200,7 @@
 .prose :global(table) {
   display: block;
   width: 100%;
-  margin-block: 1.7em;
+  margin-block: 1.4em;
   overflow-x: auto;
   border-collapse: collapse;
   font-size: 0.9rem;
@@ -136,18 +225,18 @@
   display: block;
   max-width: 100%;
   height: auto;
-  margin-block: 1.7em;
+  margin-block: 1.4em;
   border-radius: 0.75rem;
 }
 
 .prose :global(hr) {
-  margin-block: 3rem;
+  margin-block: 2.5rem;
   border: 0;
   border-top: 1px solid var(--border);
 }
 
 .prose :global(.footnotes) {
-  margin-top: 3rem;
+  margin-top: 2.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--border);
   color: var(--muted);
@@ -164,6 +253,38 @@
   .prose,
   .heartworkProse {
     font-size: 1rem;
-    line-height: 1.92;
+    line-height: 1.78;
+  }
+
+  .prose :global(h1) {
+    margin-top: 1.55em;
+    font-size: 1.75rem;
+  }
+
+  .prose :global(h2) {
+    margin-top: 1.65em;
+    font-size: 1.5rem;
+  }
+
+  .prose :global(h3) {
+    margin-top: 1.45em;
+    font-size: 1.1875rem;
+  }
+
+  .prose :global(h4),
+  .prose :global(h5),
+  .prose :global(h6) {
+    margin-top: 1.2em;
+  }
+
+  .prose :global(blockquote),
+  .prose :global(figure[data-rehype-pretty-code-figure]),
+  .prose :global(table),
+  .prose :global(img) {
+    margin-block: 1.25em;
+  }
+
+  .prose :global(hr) {
+    margin-block: 2.2rem;
   }
 }

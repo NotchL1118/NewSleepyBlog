@@ -55,6 +55,9 @@ export async function PostContentPage({ page }: { page: PostPageData }) {
               </span>
             ) : null}
             <span>{readingMinutes} 分钟阅读</span>
+            {post.tags.length > 0 ? (
+              <span className={styles.metadataTags}>{post.tags.map((tag) => `#${tag}`).join("　")}</span>
+            ) : null}
           </div>
           {post.status === "archived" ? (
             <p className={styles.archiveNotice}>
@@ -73,14 +76,6 @@ export async function PostContentPage({ page }: { page: PostPageData }) {
             </aside>
           ) : null}
           <MarkdownContent kind={post.kind}>{post.bodyMarkdown}</MarkdownContent>
-
-          {post.tags.length > 0 ? (
-            <ul className={styles.tags} aria-label="文章标签">
-              {post.tags.map((tag) => (
-                <li key={tag}># {tag}</li>
-              ))}
-            </ul>
-          ) : null}
 
           {previousPost || nextPost ? (
             <nav className={styles.adjacentPosts} aria-label="相邻文章">

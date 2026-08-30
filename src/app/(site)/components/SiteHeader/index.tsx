@@ -21,6 +21,8 @@ import styles from "./index.module.css";
 
 type ActiveSection = "home" | "regular" | "heartwork" | undefined;
 
+const HEADER_FADE_DISTANCE = 80;
+
 const navigation: ReadonlyArray<{
   label: string;
   href: "/" | "/#recent";
@@ -202,8 +204,12 @@ function AccountMenu(props: AccountActionsProps) {
 
 export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+  const lastScrollYRef = useRef(0);
+  const headerOpacityRef = useRef(1);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginPending, setLoginPending] = useState(false);
+  const [headerOpacity, setHeaderOpacity] = useState(1);
   const { signingOut, signOut } = useSignOut();
   const pending = loginPending || signingOut;
   const activeSection: ActiveSection =
@@ -214,6 +220,41 @@ export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
         : pathname.startsWith("/heartworks/")
           ? "heartwork"
           : undefined;
+
+  useEffect(() => {
+    lastScrollYRef.current = Math.max(window.scrollY, 0);
+
+    function updateHeaderVisibility() {
+      const scrollY = Math.max(window.scrollY, 0);
+      const delta = scrollY - lastScrollYRef.current;
+      lastScrollYRef.current = scrollY;
+      const headerHasOpenMenu = headerRef.current?.querySelector(
+        '[aria-expanded="true"]',
+      );
+
+      if (
+        scrollY === 0 ||
+        headerHasOpenMenu ||
+        headerRef.current?.matches(":focus-within")
+      ) {
+        headerOpacityRef.current = 1;
+        setHeaderOpacity(1);
+        return;
+      }
+
+      if (delta !== 0) {
+        const nextOpacity = Math.min(
+          1,
+          Math.max(0, headerOpacityRef.current - delta / HEADER_FADE_DISTANCE),
+        );
+        headerOpacityRef.current = nextOpacity;
+        setHeaderOpacity(nextOpacity);
+      }
+    }
+
+    window.addEventListener("scroll", updateHeaderVisibility, { passive: true });
+    return () => window.removeEventListener("scroll", updateHeaderVisibility);
+  }, []);
 
   async function handleGitHubLogin() {
     setLoginPending(true);
@@ -235,7 +276,17 @@ export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 px-3 pt-4 pb-2 sm:px-6 min-[821px]:px-10 min-[821px]:pt-7 min-[821px]:pb-3">
+    <header
+      ref={headerRef}
+      onFocusCapture={() => {
+        headerOpacityRef.current = 1;
+        setHeaderOpacity(1);
+      }}
+      style={{ opacity: headerOpacity }}
+      className={`sticky top-0 z-40 px-3 pt-4 pb-2 sm:px-6 min-[821px]:px-10 min-[821px]:pt-7 min-[821px]:pb-3 ${
+        headerOpacity === 0 ? "pointer-events-none" : ""
+      }`}
+    >
       <div className="mx-auto w-full max-w-[1160px]">
         <div className={`${styles.glass} flex items-center justify-between rounded-full p-[5px] min-[821px]:hidden`}>
           <Link
