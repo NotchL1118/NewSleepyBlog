@@ -34,10 +34,15 @@ import type {
 } from "@/server/posts/studio-post-editor";
 import { saveTag } from "@/server/taxonomy/actions";
 import {
+  MARKDOWN_FILE_ACCEPT,
+  markdownFileContentError,
+  markdownFileSelectionError,
+} from "./markdown-import";
+import {
   MarkdownEditorField,
   type EditorView,
-} from "./MarkdownEditorField";
-import { TaxonomyDialog } from "./TaxonomyManager";
+} from "../MarkdownEditorField";
+import { TaxonomyDialog } from "../TaxonomyManager";
 import { useUnsavedChanges } from "./useUnsavedChanges";
 
 type PostEditorProps = {
@@ -74,6 +79,11 @@ const viewStorageKey = "sleepy:post-editor:view";
 type InlineTagResult =
   | { tag: TagOption }
   | { error: string };
+
+type MarkdownImportUndo = {
+  bodyMarkdown: string;
+  fileName: string;
+};
 
 const editorStatusLabels = {
   draft: "草稿",
@@ -714,6 +724,9 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
   const recoveryReadyRef = useRef(post !== null);
   const currentPostIdRef = useRef<number | null>(post?.id ?? null);
   const currentUpdatedAtRef = useRef<string | null>(post?.updated_at ?? null);
+  const bodyMarkdownRef = useRef(post?.body_markdown ?? "");
+  const markdownFileInputRef = useRef<HTMLInputElement>(null);
+  const markdownImportAttemptRef = useRef(0);
 
   const [availableGroups, setAvailableGroups] = useState(groups);
   const [availableTags, setAvailableTags] = useState(tags);
@@ -737,6 +750,8 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
   const [recoveryNotice, setRecoveryNotice] = useState(false);
   const [editorView, setEditorView] = useState<EditorView>("split");
   const [metaOpen, setMetaOpen] = useState(false);
+  const [markdownImportError, setMarkdownImportError] = useState<string | null>(null);
+  const [markdownImportUndo, setMarkdownImportUndo] = useState<MarkdownImportUndo | null>(null);
 
   const [lifecycleState, lifecycleAction, lifecyclePending] = useActionState(
     transitionPost.bind(null, kind, currentPostId ?? 0),
@@ -756,6 +771,10 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
   useEffect(() => {
     currentUpdatedAtRef.current = currentUpdatedAt;
   }, [currentUpdatedAt]);
+
+  useEffect(() => {
+    bodyMarkdownRef.current = bodyMarkdown;
+  }, [bodyMarkdown]);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -1004,11 +1023,75 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
     markMaybeDirty();
   }
 
+  function changeBodyMarkdown(value: string) {
+    bodyMarkdownRef.current = value;
+    setBodyMarkdown(value);
+    setMarkdownImportError(null);
+    setMarkdownImportUndo(null);
+  }
+
+  function focusMarkdownEditor() {
+    if (editorView !== "edit") return;
+    window.requestAnimationFrame(() => {
+      document.getElementById("bodyMarkdown")?.focus();
+    });
+  }
+
+  async function importMarkdownFiles(files: readonly File[]) {
+    const attempt = ++markdownImportAttemptRef.current;
+    const selectionError = markdownFileSelectionError(files);
+    if (selectionError) {
+      setMarkdownImportError(selectionError);
+      return;
+    }
+
+    const file = files[0];
+    try {
+      const content = await file.text();
+      if (markdownImportAttemptRef.current !== attempt) return;
+
+      const contentError = markdownFileContentError(content);
+      if (contentError) {
+        setMarkdownImportError(contentError);
+        return;
+      }
+
+      const previousBodyMarkdown = bodyMarkdownRef.current;
+      bodyMarkdownRef.current = content;
+      setBodyMarkdown(content);
+      setMarkdownImportError(null);
+      setMarkdownImportUndo({
+        bodyMarkdown: previousBodyMarkdown,
+        fileName: file.name,
+      });
+      clearFeedback();
+      window.requestAnimationFrame(markMaybeDirty);
+      focusMarkdownEditor();
+    } catch {
+      if (markdownImportAttemptRef.current !== attempt) return;
+      setMarkdownImportError(`无法读取“${file.name}”，原正文未更改。`);
+    }
+  }
+
+  function undoMarkdownImport() {
+    if (!markdownImportUndo) return;
+    bodyMarkdownRef.current = markdownImportUndo.bodyMarkdown;
+    setBodyMarkdown(markdownImportUndo.bodyMarkdown);
+    setMarkdownImportError(null);
+    setMarkdownImportUndo(null);
+    clearFeedback();
+    window.requestAnimationFrame(markMaybeDirty);
+    focusMarkdownEditor();
+  }
+
   function clearRecovery() {
     setTitle("");
     setSlug("");
     setSummary("");
     setBodyMarkdown("");
+    bodyMarkdownRef.current = "";
+    setMarkdownImportError(null);
+    setMarkdownImportUndo(null);
     setGroupId("");
     setTagIds(new Set());
     setRecoveryNotice(false);
@@ -1130,6 +1213,44 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
                 {saveCopy}
               </span>
             ) : null}
+            <div className="hidden min-w-0 items-center gap-2 md:flex">
+              <input
+                ref={markdownFileInputRef}
+                type="file"
+                accept={MARKDOWN_FILE_ACCEPT}
+                className="hidden"
+                onChange={(event) => {
+                  const files = Array.from(event.currentTarget.files ?? []);
+                  event.currentTarget.value = "";
+                  if (files.length) void importMarkdownFiles(files);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => markdownFileInputRef.current?.click()}
+                className="inline-flex min-h-9 shrink-0 items-center rounded-xl border border-border px-3 text-xs font-medium transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                导入 Markdown
+              </button>
+              {markdownImportUndo ? (
+                <p role="status" className="min-w-0 max-w-48 truncate text-xs text-muted">
+                  已导入 <span title={markdownImportUndo.fileName}>{markdownImportUndo.fileName}</span>
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={undoMarkdownImport}
+                    className="font-medium text-foreground underline underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    撤销
+                  </button>
+                </p>
+              ) : null}
+              {markdownImportError ? (
+                <p role="alert" className="min-w-0 max-w-48 truncate text-xs text-foreground">
+                  {markdownImportError}
+                </p>
+              ) : null}
+            </div>
             <EditorViewControl value={editorView} onChange={selectEditorView} />
             <button
               type="button"
@@ -1289,7 +1410,8 @@ export function PostEditor({ post, groups, kind, tags }: PostEditorProps) {
               value={bodyMarkdown}
               readOnly={false}
               error={feedback.fieldErrors?.bodyMarkdown}
-              onChange={setBodyMarkdown}
+              onChange={changeBodyMarkdown}
+              onImportFiles={(files) => void importMarkdownFiles(files)}
               view={editorView}
             />
           </div>

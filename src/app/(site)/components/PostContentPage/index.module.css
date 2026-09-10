@@ -35,10 +35,15 @@
   line-height: 1.6;
 }
 
-.metadata span + span::before {
+.metadata > span + span::before {
   margin-right: 1rem;
   color: var(--border);
   content: "/";
+}
+
+.metadataTags {
+  min-width: 0;
+  color: color-mix(in srgb, var(--muted) 72%, var(--accent));
 }
 
 .archiveNotice {
@@ -57,11 +62,11 @@
 
 .reading {
   position: relative;
-  margin-top: 2.1rem;
+  margin-top: 1.25rem;
 }
 
 .summary {
-  margin-bottom: 2.25rem;
+  margin-bottom: 1.5rem;
   padding: 1.3rem 1.5rem;
   border-block: 1px solid var(--border);
   color: var(--muted);
@@ -81,23 +86,6 @@
 
 .summary p {
   margin: 0;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 3.5rem;
-  padding: 0;
-  list-style: none;
-}
-
-.tags li {
-  padding: 0.4rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 0.75rem;
 }
 
 .adjacentPosts {
@@ -142,7 +130,7 @@
 }
 
 .mobileToc {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.875rem;
   padding: 0.85rem 1rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
