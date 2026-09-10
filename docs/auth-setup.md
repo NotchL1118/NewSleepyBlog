@@ -17,6 +17,8 @@ The full local operator workflow, empty seed, generated types, verification comm
 
 The canonical production origin is `https://lsyfighting.cn`. Vercel Preview deployments are intentionally not authorized for login.
 
+The CDN uses `vercel.lsyfighting.cn` as its Vercel origin hostname. `next.config.ts` explicitly allows `lsyfighting.cn` in `experimental.serverActions.allowedOrigins` so Admin form submissions pass Next.js's origin check when the forwarded host differs from the browser origin. Keep this list limited to the canonical domain; changing it requires a new deployment.
+
 In the GitHub OAuth App, use:
 
 - Homepage URL: `https://lsyfighting.cn`

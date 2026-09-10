@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:app": "node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON 'src/**/*.test.mjs'",
+    "test:app": "node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON next.config.test.mjs 'src/**/*.test.mjs'",
     "test:db": "supabase test db --local supabase/tests",
     "test": "pnpm test:app && pnpm test:db"
   },
